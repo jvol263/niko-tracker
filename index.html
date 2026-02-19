@@ -106,6 +106,43 @@ body {
 .quick-btn.poo-btn { background: var(--poo); }
 .quick-btn.note-btn { background: var(--note); }
 
+/* Time Since Last cards */
+.time-since-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 0 16px 10px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.time-since-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 8px 6px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.time-since-card .tsl-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 2px;
+}
+.time-since-card .tsl-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+.time-since-card .tsl-value.sleep-color { color: var(--sleep); }
+.time-since-card .tsl-value.feed-color { color: var(--feed); }
+.time-since-card .tsl-value.poo-color { color: var(--poo); }
+.time-since-card .tsl-sub {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 1px;
+}
+
 /* Modal / Entry Form */
 .modal-overlay {
   display: none;
@@ -336,6 +373,156 @@ body {
 }
 .summary-day-row.header { font-weight: 700; color: var(--text-light); text-transform: uppercase; font-size: 11px; }
 
+/* Trends Modal / Overlay */
+.trends-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.trends-overlay.active { display: flex; }
+
+.trends-card {
+  background: var(--card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: fadeIn 0.2s;
+}
+
+/* Bar Charts */
+.chart-section {
+  margin-bottom: 20px;
+}
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.chart-container {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 8px 4px;
+}
+.chart-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  padding-bottom: 4px;
+  position: relative;
+}
+.chart-y-label {
+  font-size: 10px;
+  color: var(--text-light);
+  text-align: right;
+  margin-bottom: 4px;
+}
+.chart-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+.chart-bar {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+  transition: height 0.3s;
+  position: relative;
+}
+.chart-bar.sleep-bar { background: var(--sleep); }
+.chart-bar.feed-bar { background: var(--feed); }
+.chart-bar-val {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-align: center;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+.chart-x-labels {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+.chart-x-label {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+/* Trend key stat cards */
+.trend-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.trend-stat-card {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 10px;
+}
+.trend-stat-card .ts-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+.trend-stat-card .ts-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.trend-stat-card .ts-sub {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+/* Day vs Night bar */
+.day-night-bar-wrap {
+  margin-top: 6px;
+}
+.day-night-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--border);
+}
+.day-night-bar .day-portion {
+  background: var(--feed);
+  height: 100%;
+}
+.day-night-bar .night-portion {
+  background: var(--sleep);
+  height: 100%;
+}
+.day-night-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 3px;
+}
+
 /* Bottom Nav */
 .bottom-nav {
   position: fixed;
@@ -495,6 +682,25 @@ body {
   </button>
 </div>
 
+<!-- Time Since Last display -->
+<div class="time-since-row" id="timeSinceRow">
+  <div class="time-since-card">
+    <div class="tsl-label">Last Fed</div>
+    <div class="tsl-value feed-color" id="tslFeed">--</div>
+    <div class="tsl-sub" id="tslFeedSub"></div>
+  </div>
+  <div class="time-since-card">
+    <div class="tsl-label">Last Slept</div>
+    <div class="tsl-value sleep-color" id="tslSleep">--</div>
+    <div class="tsl-sub" id="tslSleepSub"></div>
+  </div>
+  <div class="time-since-card">
+    <div class="tsl-label">Last Poo</div>
+    <div class="tsl-value poo-color" id="tslPoo">--</div>
+    <div class="tsl-sub" id="tslPooSub"></div>
+  </div>
+</div>
+
 <!-- Date nav for viewing entries -->
 <div class="date-nav">
   <button onclick="shiftDate(-1)">&#8592;</button>
@@ -518,6 +724,9 @@ body {
   </button>
   <button class="nav-btn" onclick="openSummary('weekly')">
     &#x1F4C5; Weekly
+  </button>
+  <button class="nav-btn" onclick="openTrends()">
+    &#x1F4C8; Trends
   </button>
 </div>
 
@@ -634,10 +843,22 @@ body {
       <button class="modal-close" onclick="closeSummary()">&#215;</button>
     </div>
     <div class="summary-tabs">
+      <button class="summary-tab" id="tab24h" onclick="switchSummaryTab('24h')">24h</button>
       <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')">Daily</button>
       <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')">Weekly</button>
     </div>
     <div id="summaryBody"></div>
+  </div>
+</div>
+
+<!-- Trends Modal -->
+<div class="trends-overlay" id="trendsOverlay" onclick="closeTrendsBg(event)">
+  <div class="trends-card">
+    <div class="modal-header">
+      <h2>&#x1F4C8; Trends (14 Days)</h2>
+      <button class="modal-close" onclick="closeTrends()">&#215;</button>
+    </div>
+    <div id="trendsBody"></div>
   </div>
 </div>
 
@@ -680,10 +901,11 @@ async function syncFromCloud() {
     }
     setSyncStatus('ok', 'Synced just now');
     renderEntries();
+    renderTimeSinceLast();
     checkSleepActive();
   } catch (err) {
     console.error('Sync failed:', err);
-    setSyncStatus('error', 'Sync failed — tap to retry');
+    setSyncStatus('error', 'Sync failed \u2014 tap to retry');
   }
 }
 
@@ -695,6 +917,7 @@ async function addEntry(entry) {
   // Optimistic: add to local cache immediately
   entriesCache.push(entry);
   renderEntries();
+  renderTimeSinceLast();
 
   try {
     const res = await fetch(DB + '/entries.json', {
@@ -711,7 +934,7 @@ async function addEntry(entry) {
   } catch (err) {
     console.error('Save failed:', err);
     showToast('Save failed! Will retry...');
-    setSyncStatus('error', 'Save failed — tap to retry');
+    setSyncStatus('error', 'Save failed \u2014 tap to retry');
   }
 }
 
@@ -723,6 +946,7 @@ async function deleteEntry(id) {
   // Optimistic: remove from local cache
   entriesCache = entriesCache.filter(e => e.id !== id);
   renderEntries();
+  renderTimeSinceLast();
 
   if (entry._fbKey) {
     try {
@@ -731,7 +955,7 @@ async function deleteEntry(id) {
       setSyncStatus('ok', 'Synced just now');
     } catch (err) {
       console.error('Delete failed:', err);
-      setSyncStatus('error', 'Delete failed — tap to retry');
+      setSyncStatus('error', 'Delete failed \u2014 tap to retry');
     }
   }
 }
@@ -780,6 +1004,9 @@ function getWeekStart(dateStr) {
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function dateStrFromDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
@@ -831,6 +1058,7 @@ async function openSleepWake() {
   await saveSleepActive(null);
   checkSleepActive();
   renderEntries();
+  renderTimeSinceLast();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -942,6 +1170,7 @@ async function saveEntry(e) {
   closeModal();
   checkSleepActive();
   renderEntries();
+  renderTimeSinceLast();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1025,6 +1254,92 @@ function calcSleepMins(e) {
 }
 
 // ═══════════════════════════════════════════════════════
+// TIME SINCE LAST
+// ═══════════════════════════════════════════════════════
+function getEntryTimestamp(e) {
+  // Returns a Date object for the entry's effective time
+  const timeStr = e.type === 'sleep' ? (e.sleepEnd || e.sleepStart) : e.time;
+  const dateStr = e.type === 'sleep' ? (e.sleepEndDate || e.date) : e.date;
+  if (!timeStr || !dateStr) return null;
+  return new Date(dateStr + 'T' + timeStr + ':00');
+}
+
+function formatTimeSince(diffMs) {
+  if (diffMs < 0) return '--';
+  const totalMins = Math.floor(diffMs / 60000);
+  if (totalMins < 1) return 'just now';
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hrs === 0) return mins + 'm ago';
+  if (mins === 0) return hrs + 'h ago';
+  return hrs + 'h ' + mins + 'm ago';
+}
+
+function renderTimeSinceLast() {
+  const entries = loadEntries();
+  const now = new Date();
+
+  // Find most recent feed
+  let lastFeedTime = null;
+  let lastFeedAt = null;
+  entries.filter(e => e.type === 'feed').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts && (!lastFeedTime || ts > lastFeedTime)) {
+      lastFeedTime = ts;
+      lastFeedAt = formatTime12(e.time);
+    }
+  });
+
+  // Find most recent sleep (use sleep end if available, else sleep start)
+  let lastSleepTime = null;
+  let lastSleepAt = null;
+  entries.filter(e => e.type === 'sleep').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts && (!lastSleepTime || ts > lastSleepTime)) {
+      lastSleepTime = ts;
+      lastSleepAt = e.sleepEnd ? formatTime12(e.sleepEnd) : formatTime12(e.sleepStart);
+    }
+  });
+
+  // Check if currently sleeping
+  const sleepActive = localStorage.getItem('niko_sleep_active');
+  if (sleepActive) {
+    const data = JSON.parse(sleepActive);
+    const sleepStartTs = new Date(data.date + 'T' + data.time + ':00');
+    if (!lastSleepTime || sleepStartTs > lastSleepTime) {
+      lastSleepTime = sleepStartTs;
+      lastSleepAt = 'sleeping now';
+    }
+  }
+
+  // Find most recent poo
+  let lastPooTime = null;
+  let lastPooAt = null;
+  entries.filter(e => e.type === 'poo').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts && (!lastPooTime || ts > lastPooTime)) {
+      lastPooTime = ts;
+      lastPooAt = formatTime12(e.time);
+    }
+  });
+
+  // Update DOM
+  document.getElementById('tslFeed').textContent = lastFeedTime ? formatTimeSince(now - lastFeedTime) : '--';
+  document.getElementById('tslFeedSub').textContent = lastFeedAt || '';
+
+  if (sleepActive && lastSleepAt === 'sleeping now') {
+    document.getElementById('tslSleep').textContent = 'Now';
+    document.getElementById('tslSleepSub').textContent = 'sleeping now';
+  } else {
+    document.getElementById('tslSleep').textContent = lastSleepTime ? formatTimeSince(now - lastSleepTime) : '--';
+    document.getElementById('tslSleepSub').textContent = lastSleepAt || '';
+  }
+
+  document.getElementById('tslPoo').textContent = lastPooTime ? formatTimeSince(now - lastPooTime) : '--';
+  document.getElementById('tslPooSub').textContent = lastPooAt || '';
+}
+
+// ═══════════════════════════════════════════════════════
 // DATE NAV
 // ═══════════════════════════════════════════════════════
 function shiftDate(n) {
@@ -1044,6 +1359,7 @@ function closeSummary() { document.getElementById('summaryOverlay').classList.re
 function closeSummaryBg(e) { if (e.target === document.getElementById('summaryOverlay')) closeSummary(); }
 
 function switchSummaryTab(tab) {
+  document.getElementById('tab24h').classList.toggle('active', tab === '24h');
   document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
   document.getElementById('tabWeekly').classList.toggle('active', tab === 'weekly');
 
@@ -1051,7 +1367,60 @@ function switchSummaryTab(tab) {
   const entries = loadEntries();
   const dateStr = document.getElementById('viewDate').value;
 
-  if (tab === 'daily') {
+  if (tab === '24h') {
+    document.getElementById('summaryTitle').textContent = 'Last 24 Hours';
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter entries within the last 24 hours
+    const recentEntries = entries.filter(e => {
+      const ts = getEntryTimestamp(e);
+      return ts && ts >= cutoff && ts <= now;
+    });
+
+    const stats = calcDayStats(recentEntries);
+
+    // Find longest single sleep stretch in the 24h window
+    let longestSleepMins = 0;
+    recentEntries.filter(e => e.type === 'sleep').forEach(e => {
+      const mins = calcSleepMins(e);
+      if (mins > longestSleepMins) longestSleepMins = mins;
+    });
+
+    // Time since last feed
+    let lastFeedAgo = '--';
+    let lastFeedTime = null;
+    entries.filter(e => e.type === 'feed').forEach(e => {
+      const ts = getEntryTimestamp(e);
+      if (ts && (!lastFeedTime || ts > lastFeedTime)) lastFeedTime = ts;
+    });
+    if (lastFeedTime) lastFeedAgo = formatTimeSince(now - lastFeedTime);
+
+    // Time since last poo
+    let lastPooAgo = '--';
+    let lastPooTime = null;
+    entries.filter(e => e.type === 'poo').forEach(e => {
+      const ts = getEntryTimestamp(e);
+      if (ts && (!lastPooTime || ts > lastPooTime)) lastPooTime = ts;
+    });
+    if (lastPooTime) lastPooAgo = formatTimeSince(now - lastPooTime);
+
+    let html = renderDayStats(stats);
+    html += '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F4A4; Longest Sleep Stretch</span>' +
+      '<span class="stat-value sleep-color">' + formatMins(longestSleepMins) + '</span>' +
+    '</div>';
+    html += '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F37C; Since Last Feed</span>' +
+      '<span class="stat-value feed-color">' + lastFeedAgo + '</span>' +
+    '</div>';
+    html += '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F4A9; Since Last Poo</span>' +
+      '<span class="stat-value poo-color">' + lastPooAgo + '</span>' +
+    '</div>';
+    body.innerHTML = html;
+
+  } else if (tab === 'daily') {
     document.getElementById('summaryTitle').textContent = 'Daily Summary \u2014 ' + formatDateShort(dateStr);
     const dayEntries = entries.filter(e => e.date === dateStr);
     const stats = calcDayStats(dayEntries);
@@ -1133,6 +1502,196 @@ function renderDayStats(stats) {
 }
 
 // ═══════════════════════════════════════════════════════
+// TRENDS
+// ═══════════════════════════════════════════════════════
+function openTrends() {
+  document.getElementById('trendsOverlay').classList.add('active');
+  renderTrends();
+}
+function closeTrends() { document.getElementById('trendsOverlay').classList.remove('active'); }
+function closeTrendsBg(e) { if (e.target === document.getElementById('trendsOverlay')) closeTrends(); }
+
+function renderTrends() {
+  const entries = loadEntries();
+  const today = todayStr();
+  const days = [];
+
+  // Build 14 days of data (today and 13 days before)
+  for (let i = 13; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const dayEntries = entries.filter(e => e.date === d);
+    const stats = calcDayStats(dayEntries);
+    const dt = new Date(d + 'T00:00:00');
+    const dayLabel = dt.toLocaleDateString('en-US', { weekday: 'narrow' });
+    const dayNum = dt.getDate();
+    days.push({
+      date: d,
+      label: dayLabel,
+      dayNum: dayNum,
+      sleepHrs: Math.round((stats.sleepMins / 60) * 10) / 10,
+      feedMl: stats.feedMl
+    });
+  }
+
+  // Find max values for scaling
+  const maxSleep = Math.max(...days.map(d => d.sleepHrs), 1);
+  const maxFeed = Math.max(...days.map(d => d.feedMl), 1);
+
+  let html = '';
+
+  // Sleep chart
+  html += '<div class="chart-section">';
+  html += '<div class="chart-title">&#x1F4A4; Daily Sleep (hours)</div>';
+  html += '<div class="chart-container">';
+  html += '<div class="chart-y-label">' + maxSleep.toFixed(1) + 'h</div>';
+  html += '<div class="chart-area">';
+  days.forEach(d => {
+    const pct = maxSleep > 0 ? (d.sleepHrs / maxSleep) * 100 : 0;
+    const valLabel = d.sleepHrs > 0 ? d.sleepHrs.toFixed(1) : '';
+    html += '<div class="chart-bar-wrap">' +
+      (valLabel ? '<div class="chart-bar-val">' + valLabel + '</div>' : '<div class="chart-bar-val">&nbsp;</div>') +
+      '<div class="chart-bar sleep-bar" style="height:' + pct + '%"></div>' +
+    '</div>';
+  });
+  html += '</div>';
+  html += '<div class="chart-x-labels">';
+  days.forEach(d => {
+    html += '<div class="chart-x-label">' + d.dayNum + '</div>';
+  });
+  html += '</div>';
+  html += '</div></div>';
+
+  // Feed chart
+  html += '<div class="chart-section">';
+  html += '<div class="chart-title">&#x1F37C; Daily Feed Volume (ml)</div>';
+  html += '<div class="chart-container">';
+  html += '<div class="chart-y-label">' + maxFeed + ' ml</div>';
+  html += '<div class="chart-area">';
+  days.forEach(d => {
+    const pct = maxFeed > 0 ? (d.feedMl / maxFeed) * 100 : 0;
+    const valLabel = d.feedMl > 0 ? d.feedMl : '';
+    html += '<div class="chart-bar-wrap">' +
+      (valLabel ? '<div class="chart-bar-val">' + valLabel + '</div>' : '<div class="chart-bar-val">&nbsp;</div>') +
+      '<div class="chart-bar feed-bar" style="height:' + pct + '%"></div>' +
+    '</div>';
+  });
+  html += '</div>';
+  html += '<div class="chart-x-labels">';
+  days.forEach(d => {
+    html += '<div class="chart-x-label">' + d.dayNum + '</div>';
+  });
+  html += '</div>';
+  html += '</div></div>';
+
+  // Key stats (past 7 days)
+  html += renderTrendStats(entries, today);
+
+  document.getElementById('trendsBody').innerHTML = html;
+}
+
+function renderTrendStats(entries, today) {
+  // Collect entries for the past 7 days
+  const past7Dates = [];
+  for (let i = 6; i >= 0; i--) {
+    past7Dates.push(addDays(today, -i));
+  }
+  const past7Entries = entries.filter(e => past7Dates.includes(e.date));
+
+  // 1. Longest sleep stretch in past 7 days
+  let longestSleepMins = 0;
+  past7Entries.filter(e => e.type === 'sleep').forEach(e => {
+    const mins = calcSleepMins(e);
+    if (mins > longestSleepMins) longestSleepMins = mins;
+  });
+
+  // 2. Average time between feedings (past 7 days)
+  const feedTimestamps = [];
+  past7Entries.filter(e => e.type === 'feed').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts) feedTimestamps.push(ts.getTime());
+  });
+  feedTimestamps.sort((a, b) => a - b);
+  let avgFeedGapMins = 0;
+  if (feedTimestamps.length > 1) {
+    let totalGap = 0;
+    for (let i = 1; i < feedTimestamps.length; i++) {
+      totalGap += feedTimestamps[i] - feedTimestamps[i - 1];
+    }
+    avgFeedGapMins = Math.round((totalGap / (feedTimestamps.length - 1)) / 60000);
+  }
+
+  // 3. Day vs night sleep split (past 7 days)
+  // Daytime: 7am-7pm, Nighttime: 7pm-7am
+  let dayMins = 0;
+  let nightMins = 0;
+  past7Entries.filter(e => e.type === 'sleep' && e.sleepStart && e.sleepEnd).forEach(e => {
+    const [sh, sm] = e.sleepStart.split(':').map(Number);
+    const startMinOfDay = sh * 60 + sm;
+    const totalMins = calcSleepMins(e);
+
+    // Walk through each minute of sleep and classify it
+    for (let m = 0; m < totalMins; m++) {
+      const minuteOfDay = (startMinOfDay + m) % (24 * 60);
+      // Day = 7:00 (420) to 18:59 (1139), Night = 19:00 (1140) to 6:59 (419)
+      if (minuteOfDay >= 420 && minuteOfDay < 1140) {
+        dayMins++;
+      } else {
+        nightMins++;
+      }
+    }
+  });
+  const totalSleepMinsDN = dayMins + nightMins;
+  const dayPct = totalSleepMinsDN > 0 ? Math.round((dayMins / totalSleepMinsDN) * 100) : 0;
+  const nightPct = totalSleepMinsDN > 0 ? 100 - dayPct : 0;
+
+  // 4. Average poo frequency (past 7 days)
+  const pooCount7 = past7Entries.filter(e => e.type === 'poo').length;
+  const avgPooPerDay = (pooCount7 / 7).toFixed(1);
+
+  let html = '<div class="trend-stats">';
+
+  // Longest sleep
+  html += '<div class="trend-stat-card">' +
+    '<div class="ts-label">&#x1F4A4; Longest Sleep</div>' +
+    '<div class="ts-value">' + formatMins(longestSleepMins) + '</div>' +
+    '<div class="ts-sub">past 7 days</div>' +
+  '</div>';
+
+  // Avg feed gap
+  html += '<div class="trend-stat-card">' +
+    '<div class="ts-label">&#x1F37C; Avg Feed Gap</div>' +
+    '<div class="ts-value">' + (avgFeedGapMins > 0 ? formatMins(avgFeedGapMins) : '--') + '</div>' +
+    '<div class="ts-sub">between feedings</div>' +
+  '</div>';
+
+  // Poo frequency
+  html += '<div class="trend-stat-card">' +
+    '<div class="ts-label">&#x1F4A9; Poo Frequency</div>' +
+    '<div class="ts-value">' + avgPooPerDay + '/day</div>' +
+    '<div class="ts-sub">past 7 days</div>' +
+  '</div>';
+
+  // Day vs night sleep (takes full width)
+  html += '<div class="trend-stat-card">' +
+    '<div class="ts-label">&#x1F319; Day vs Night Sleep</div>' +
+    '<div class="day-night-bar-wrap">' +
+      '<div class="day-night-bar">' +
+        '<div class="day-portion" style="width:' + dayPct + '%"></div>' +
+        '<div class="night-portion" style="width:' + nightPct + '%"></div>' +
+      '</div>' +
+      '<div class="day-night-labels">' +
+        '<span>Day ' + dayPct + '%</span>' +
+        '<span>Night ' + nightPct + '%</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ts-sub">7am\u20137pm vs 7pm\u20137am</div>' +
+  '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
 // EXPORT CSV
 // ═══════════════════════════════════════════════════════
 function exportData() {
@@ -1169,6 +1728,14 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) syncFromCloud();
 });
 
+// Update "time since last" every 60 seconds
+let timeSinceInterval;
+function startTimeSinceRefresh() {
+  timeSinceInterval = setInterval(() => {
+    if (!document.hidden) renderTimeSinceLast();
+  }, 60000);
+}
+
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
@@ -1176,7 +1743,9 @@ document.getElementById('viewDate').value = todayStr();
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 syncFromCloud();
 startAutoRefresh();
+startTimeSinceRefresh();
 checkSleepActive();
+renderTimeSinceLast();
 </script>
 </body>
 </html>
