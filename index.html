@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Niko">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F476;</text></svg>">
+<title>Niko Tracker</title>
+<style>
+:root {
+  --bg: #f5f0eb;
+  --card: #ffffff;
+  --primary: #6b8f71;
+  --primary-dark: #557a5b;
+  --sleep: #7ba1c7;
+  --feed: #e8a87c;
+  --poo: #c4956a;
+  --note: #8e8e93;
+  --text: #3a3a3a;
+  --text-light: #777;
+  --border: #e0dbd5;
+  --danger: #d9534f;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  padding-bottom: 80px;
+}
+
+/* Header */
+.header {
+  background: var(--primary);
+  color: white;
+  padding: 14px 20px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+.header .date-display { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+/* Sync indicator */
+.sync-bar {
+  height: 3px;
+  background: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 101;
+}
+.sync-bar.syncing { background: linear-gradient(90deg, transparent, var(--sleep), transparent); animation: shimmer 1s infinite; }
+.sync-bar.error { background: var(--danger); }
+@keyframes shimmer { 0%{background-position:-200px 0}100%{background-position:200px 0} }
+
+.sync-status {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-light);
+  padding: 4px;
+  cursor: pointer;
+}
+.sync-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.sync-status .dot.ok { background: #4caf50; }
+.sync-status .dot.err { background: var(--danger); }
+.sync-status .dot.loading { background: var(--sleep); animation: pulse 1s infinite; }
+
+/* Quick-add buttons */
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.quick-btn {
+  border: none;
+  border-radius: 16px;
+  padding: 18px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.quick-btn:active { transform: scale(0.95); }
+.quick-btn .icon { font-size: 26px; }
+.quick-btn.sleep-btn { background: var(--sleep); }
+.quick-btn.feed-btn { background: var(--feed); }
+.quick-btn.poo-btn { background: var(--poo); }
+.quick-btn.note-btn { background: var(--note); }
+
+/* Modal / Entry Form */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 10px));
+  animation: slideUp 0.25s ease-out;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.modal-header h2 { font-size: 18px; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.form-group textarea { resize: none; height: 70px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.submit-btn:disabled { opacity: 0.6; }
+.submit-btn.sleep-btn { background: var(--sleep); }
+.submit-btn.feed-btn { background: var(--feed); }
+.submit-btn.poo-btn { background: var(--poo); }
+.submit-btn.note-btn { background: var(--primary); }
+
+/* Timeline / recent entries */
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 6px 20px 4px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.timeline {
+  padding: 0 16px 8px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.entry-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.entry-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.entry-icon.sleep { background: #dce8f3; }
+.entry-icon.feed { background: #fae4d3; }
+.entry-icon.poo { background: #ecdbc8; }
+.entry-icon.note { background: #e5e5e5; }
+
+.entry-details { flex: 1; min-width: 0; }
+.entry-details .entry-title { font-weight: 600; font-size: 15px; }
+.entry-details .entry-sub { font-size: 13px; color: var(--text-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.entry-time { font-size: 13px; color: var(--text-light); white-space: nowrap; }
+
+.entry-delete {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.entry-delete:active { color: var(--danger); }
+
+.empty-state {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+/* Summary Modal */
+.summary-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.summary-overlay.active { display: flex; }
+
+.summary-card {
+  background: var(--card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: fadeIn 0.2s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.summary-tabs {
+  display: flex;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 16px;
+}
+.summary-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+}
+.summary-tab.active { background: white; color: var(--text); box-shadow: var(--shadow); }
+
+.summary-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.summary-stat:last-child { border-bottom: none; }
+.stat-label { font-size: 14px; color: var(--text-light); display: flex; align-items: center; gap: 8px; }
+.stat-value { font-size: 20px; font-weight: 700; }
+.stat-value.sleep-color { color: var(--sleep); }
+.stat-value.feed-color { color: var(--feed); }
+.stat-value.poo-color { color: var(--poo); }
+
+.summary-day-list { margin-top: 12px; }
+.summary-day-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.summary-day-row.header { font-weight: 700; color: var(--text-light); text-transform: uppercase; font-size: 11px; }
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.nav-btn {
+  border: none;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-btn:active { background: var(--border); }
+
+/* Date picker row */
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 16px 0;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.date-nav button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.date-nav button:active { background: var(--border); }
+.date-nav input[type="date"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--card);
+  color: var(--text);
+}
+
+/* Sleep tracking active state */
+.sleep-active-banner {
+  display: none;
+  background: var(--sleep);
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: pulse 2s infinite;
+}
+.sleep-active-banner.active { display: block; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Data management */
+.data-actions {
+  max-width: 500px;
+  margin: 12px auto;
+  padding: 0 16px;
+  display: flex;
+  gap: 8px;
+}
+.data-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-light);
+}
+.data-btn:active { background: var(--bg); }
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#x1F476; Niko Tracker</h1>
+  <div class="date-display" id="headerDate"></div>
+</div>
+<div class="sync-bar" id="syncBar"></div>
+
+<div class="sleep-active-banner" id="sleepBanner" onclick="openSleepWake()">
+  &#x1F4A4; Sleeping since <span id="sleepSinceTime"></span> — tap to log wake up
+</div>
+
+<!-- Sync status -->
+<div class="sync-status" id="syncStatus" onclick="syncFromCloud()">
+  <span class="dot ok" id="syncDot"></span> <span id="syncText">Synced</span>
+</div>
+
+<!-- Quick-add buttons -->
+<div class="quick-actions">
+  <button class="quick-btn sleep-btn" onclick="openModal('sleep')">
+    <span class="icon">&#x1F4A4;</span>
+    Sleep
+  </button>
+  <button class="quick-btn feed-btn" onclick="openModal('feed')">
+    <span class="icon">&#x1F37C;</span>
+    Feeding
+  </button>
+  <button class="quick-btn poo-btn" onclick="openModal('poo')">
+    <span class="icon">&#x1F4A9;</span>
+    Poo
+  </button>
+  <button class="quick-btn note-btn" onclick="openModal('note')">
+    <span class="icon">&#x1F4DD;</span>
+    Note
+  </button>
+</div>
+
+<!-- Date nav for viewing entries -->
+<div class="date-nav">
+  <button onclick="shiftDate(-1)">&#8592;</button>
+  <input type="date" id="viewDate" onchange="renderEntries()">
+  <button onclick="shiftDate(1)">&#8594;</button>
+</div>
+
+<!-- Recent entries -->
+<p class="section-title" style="margin-top:6px">Today's Log</p>
+<div class="timeline" id="timeline"></div>
+
+<!-- Data management -->
+<div class="data-actions">
+  <button class="data-btn" onclick="exportData()">&#x1F4E5; Export CSV</button>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-btn" onclick="openSummary('daily')">
+    &#x1F4CA; Daily
+  </button>
+  <button class="nav-btn" onclick="openSummary('weekly')">
+    &#x1F4C5; Weekly
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Entry Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalBg(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-header">
+      <h2 id="modalTitle">Log Entry</h2>
+      <button class="modal-close" onclick="closeModal()">&#215;</button>
+    </div>
+    <form id="entryForm" onsubmit="saveEntry(event)">
+      <input type="hidden" id="entryType">
+
+      <!-- Sleep fields -->
+      <div id="sleepFields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fell Asleep</label>
+            <input type="time" id="sleepStart" step="60">
+          </div>
+          <div class="form-group">
+            <label>Woke Up (optional)</label>
+            <input type="time" id="sleepEnd" step="60">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="sleepDate">
+        </div>
+      </div>
+
+      <!-- Feed fields -->
+      <div id="feedFields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="feedTime" step="60">
+          </div>
+          <div class="form-group">
+            <label>Volume (ml)</label>
+            <input type="number" id="feedVolume" inputmode="numeric" placeholder="e.g. 90" min="0" step="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="feedType">
+            <option value="breast">Breast Milk</option>
+            <option value="formula">Formula</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="feedDate">
+        </div>
+      </div>
+
+      <!-- Poo fields -->
+      <div id="pooFields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="pooTime" step="60">
+          </div>
+          <div class="form-group">
+            <label>Pee too?</label>
+            <select id="pooPee">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="pooDate">
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" id="pooNotes" placeholder="Color, consistency...">
+        </div>
+      </div>
+
+      <!-- Note fields -->
+      <div id="noteFields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="noteTime" step="60">
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="noteDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Note</label>
+          <textarea id="noteText" placeholder="Anything to remember..."></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Save</button>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Modal -->
+<div class="summary-overlay" id="summaryOverlay" onclick="closeSummaryBg(event)">
+  <div class="summary-card">
+    <div class="modal-header">
+      <h2 id="summaryTitle">Summary</h2>
+      <button class="modal-close" onclick="closeSummary()">&#215;</button>
+    </div>
+    <div class="summary-tabs">
+      <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')">Daily</button>
+      <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')">Weekly</button>
+    </div>
+    <div id="summaryBody"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// FIREBASE CONFIG — This is your shared cloud database
+// ═══════════════════════════════════════════════════════
+const FIREBASE_URL = 'https://niko-tracker-default-rtdb.firebaseio.com';
+const SECRET_PATH  = 'nk_v2r9x7m4q1';  // acts as a private key for your data
+const DB = FIREBASE_URL + '/' + SECRET_PATH;
+
+// ═══════════════════════════════════════════════════════
+// DATA LAYER — Firebase REST API + local cache
+// ═══════════════════════════════════════════════════════
+let entriesCache = [];     // local in-memory cache
+let isSyncing = false;
+
+// --- Read all entries from Firebase ---
+async function syncFromCloud() {
+  setSyncStatus('loading', 'Syncing...');
+  try {
+    const res = await fetch(DB + '/entries.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data) {
+      entriesCache = Object.entries(data).map(([fbKey, val]) => {
+        val._fbKey = fbKey;
+        return val;
+      });
+    } else {
+      entriesCache = [];
+    }
+    // Also sync sleep state
+    const sleepRes = await fetch(DB + '/sleepActive.json');
+    const sleepData = await sleepRes.json();
+    if (sleepData) {
+      localStorage.setItem('niko_sleep_active', JSON.stringify(sleepData));
+    } else {
+      localStorage.removeItem('niko_sleep_active');
+    }
+    setSyncStatus('ok', 'Synced just now');
+    renderEntries();
+    checkSleepActive();
+  } catch (err) {
+    console.error('Sync failed:', err);
+    setSyncStatus('error', 'Sync failed — tap to retry');
+  }
+}
+
+// --- Add a single entry to Firebase ---
+async function addEntry(entry) {
+  entry.id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  entry.createdAt = new Date().toISOString();
+
+  // Optimistic: add to local cache immediately
+  entriesCache.push(entry);
+  renderEntries();
+
+  try {
+    const res = await fetch(DB + '/entries.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const result = await res.json();
+    // Store the Firebase key
+    entry._fbKey = result.name;
+    showToast('Saved &#10003;');
+    setSyncStatus('ok', 'Synced just now');
+  } catch (err) {
+    console.error('Save failed:', err);
+    showToast('Save failed! Will retry...');
+    setSyncStatus('error', 'Save failed — tap to retry');
+  }
+}
+
+// --- Delete an entry from Firebase ---
+async function deleteEntry(id) {
+  const entry = entriesCache.find(e => e.id === id);
+  if (!entry) return;
+
+  // Optimistic: remove from local cache
+  entriesCache = entriesCache.filter(e => e.id !== id);
+  renderEntries();
+
+  if (entry._fbKey) {
+    try {
+      await fetch(DB + '/entries/' + entry._fbKey + '.json', { method: 'DELETE' });
+      showToast('Deleted');
+      setSyncStatus('ok', 'Synced just now');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setSyncStatus('error', 'Delete failed — tap to retry');
+    }
+  }
+}
+
+// --- Save / clear sleep active state to Firebase ---
+async function saveSleepActive(data) {
+  if (data) {
+    localStorage.setItem('niko_sleep_active', JSON.stringify(data));
+    try { await fetch(DB + '/sleepActive.json', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
+  } else {
+    localStorage.removeItem('niko_sleep_active');
+    try { await fetch(DB + '/sleepActive.json', { method: 'DELETE' }); } catch(e) {}
+  }
+}
+
+function loadEntries() { return entriesCache; }
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function nowTimeStr() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function formatTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+function formatDateShort(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function getWeekStart(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  const bar = document.getElementById('syncBar');
+  dot.className = 'dot ' + (state === 'ok' ? 'ok' : state === 'error' ? 'err' : 'loading');
+  txt.textContent = text;
+  bar.className = 'sync-bar' + (state === 'loading' ? ' syncing' : state === 'error' ? ' error' : '');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.innerHTML = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+// ═══════════════════════════════════════════════════════
+// SLEEP BANNER
+// ═══════════════════════════════════════════════════════
+function checkSleepActive() {
+  const raw = localStorage.getItem('niko_sleep_active');
+  const banner = document.getElementById('sleepBanner');
+  if (raw) {
+    const data = JSON.parse(raw);
+    document.getElementById('sleepSinceTime').textContent = formatTime12(data.time);
+    banner.classList.add('active');
+  } else {
+    banner.classList.remove('active');
+  }
+}
+
+async function openSleepWake() {
+  const raw = localStorage.getItem('niko_sleep_active');
+  if (!raw) return;
+  const data = JSON.parse(raw);
+  const wakeTime = nowTimeStr();
+  await addEntry({
+    type: 'sleep',
+    date: data.date,
+    sleepStart: data.time,
+    sleepEnd: wakeTime,
+    sleepEndDate: todayStr()
+  });
+  await saveSleepActive(null);
+  checkSleepActive();
+  renderEntries();
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
+function openModal(type) {
+  const overlay = document.getElementById('modalOverlay');
+  const titles = { sleep: '&#x1F4A4; Log Sleep', feed: '&#x1F37C; Log Feeding', poo: '&#x1F4A9; Log Poo', note: '&#x1F4DD; Add Note' };
+  document.getElementById('modalTitle').innerHTML = titles[type];
+  document.getElementById('entryType').value = type;
+
+  document.getElementById('sleepFields').style.display = 'none';
+  document.getElementById('feedFields').style.display = 'none';
+  document.getElementById('pooFields').style.display = 'none';
+  document.getElementById('noteFields').style.display = 'none';
+
+  const btn = document.getElementById('submitBtn');
+  btn.className = 'submit-btn ' + type + '-btn';
+  btn.disabled = false;
+
+  const today = todayStr();
+  const now = nowTimeStr();
+
+  if (type === 'sleep') {
+    document.getElementById('sleepFields').style.display = 'block';
+    document.getElementById('sleepStart').value = now;
+    document.getElementById('sleepEnd').value = '';
+    document.getElementById('sleepDate').value = today;
+    const active = localStorage.getItem('niko_sleep_active');
+    if (active) {
+      const data = JSON.parse(active);
+      document.getElementById('sleepStart').value = data.time;
+      document.getElementById('sleepDate').value = data.date;
+      document.getElementById('sleepEnd').value = now;
+      btn.textContent = 'Log Wake Up';
+    } else {
+      btn.textContent = 'Start Sleep';
+    }
+  } else if (type === 'feed') {
+    document.getElementById('feedFields').style.display = 'block';
+    document.getElementById('feedTime').value = now;
+    document.getElementById('feedVolume').value = '';
+    document.getElementById('feedDate').value = today;
+    btn.textContent = 'Save Feeding';
+  } else if (type === 'poo') {
+    document.getElementById('pooFields').style.display = 'block';
+    document.getElementById('pooTime').value = now;
+    document.getElementById('pooDate').value = today;
+    document.getElementById('pooNotes').value = '';
+    btn.textContent = 'Save Poo';
+  } else {
+    document.getElementById('noteFields').style.display = 'block';
+    document.getElementById('noteTime').value = now;
+    document.getElementById('noteDate').value = today;
+    document.getElementById('noteText').value = '';
+    btn.textContent = 'Save Note';
+  }
+
+  overlay.classList.add('active');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+function closeModalBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+async function saveEntry(e) {
+  e.preventDefault();
+  const type = document.getElementById('entryType').value;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+
+  if (type === 'sleep') {
+    const start = document.getElementById('sleepStart').value;
+    const end = document.getElementById('sleepEnd').value;
+    const date = document.getElementById('sleepDate').value;
+    if (!start) { btn.disabled = false; return; }
+
+    const active = localStorage.getItem('niko_sleep_active');
+    if (active && end) {
+      await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: todayStr() });
+      await saveSleepActive(null);
+    } else if (end) {
+      await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: date });
+    } else {
+      await saveSleepActive({ time: start, date });
+      showToast('Sleep started &#x1F4A4;');
+    }
+  } else if (type === 'feed') {
+    const time = document.getElementById('feedTime').value;
+    const volume = document.getElementById('feedVolume').value;
+    const feedType = document.getElementById('feedType').value;
+    const date = document.getElementById('feedDate').value;
+    if (!time) { btn.disabled = false; return; }
+    await addEntry({ type: 'feed', date, time, volume: volume ? Number(volume) : null, feedType });
+  } else if (type === 'poo') {
+    const time = document.getElementById('pooTime').value;
+    const pee = document.getElementById('pooPee').value;
+    const date = document.getElementById('pooDate').value;
+    const notes = document.getElementById('pooNotes').value;
+    if (!time) { btn.disabled = false; return; }
+    await addEntry({ type: 'poo', date, time, pee, notes });
+  } else {
+    const time = document.getElementById('noteTime').value;
+    const date = document.getElementById('noteDate').value;
+    const text = document.getElementById('noteText').value;
+    if (!text) { btn.disabled = false; return; }
+    await addEntry({ type: 'note', date, time, text });
+  }
+
+  closeModal();
+  checkSleepActive();
+  renderEntries();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER TIMELINE
+// ═══════════════════════════════════════════════════════
+function renderEntries() {
+  const dateStr = document.getElementById('viewDate').value;
+  const entries = loadEntries().filter(e => e.date === dateStr);
+  entries.sort((a, b) => {
+    const tA = a.sleepStart || a.time || '00:00';
+    const tB = b.sleepStart || b.time || '00:00';
+    return tB.localeCompare(tA);
+  });
+
+  const el = document.getElementById('timeline');
+  const sectionTitle = document.querySelector('.section-title');
+  const today = todayStr();
+  sectionTitle.textContent = dateStr === today ? "Today's Log" : formatDateShort(dateStr);
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="empty-state">No entries yet for this day.<br>Tap a button above to log!</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(e => {
+    let icon, iconClass, title, sub, timeStr;
+    if (e.type === 'sleep') {
+      icon = '&#x1F4A4;'; iconClass = 'sleep';
+      timeStr = formatTime12(e.sleepStart);
+      if (e.sleepEnd) {
+        title = 'Sleep';
+        const mins = calcSleepMins(e);
+        const hrs = Math.floor(mins / 60);
+        const m = mins % 60;
+        sub = formatTime12(e.sleepStart) + ' &#8594; ' + formatTime12(e.sleepEnd) + ' (' + (hrs > 0 ? hrs + 'h ' : '') + m + 'm)';
+      } else {
+        title = 'Fell Asleep'; sub = 'Still sleeping...';
+      }
+    } else if (e.type === 'feed') {
+      icon = '&#x1F37C;'; iconClass = 'feed';
+      timeStr = formatTime12(e.time);
+      title = e.feedType === 'formula' ? 'Formula' : e.feedType === 'mixed' ? 'Mixed Feed' : 'Breast Milk';
+      sub = e.volume ? e.volume + ' ml' : 'Volume not recorded';
+    } else if (e.type === 'poo') {
+      icon = '&#x1F4A9;'; iconClass = 'poo';
+      timeStr = formatTime12(e.time);
+      title = 'Poo' + (e.pee === 'yes' ? ' + Pee' : '');
+      sub = e.notes || '';
+    } else {
+      icon = '&#x1F4DD;'; iconClass = 'note';
+      timeStr = formatTime12(e.time);
+      title = 'Note';
+      sub = e.text || '';
+    }
+    return '<div class="entry-card">' +
+      '<div class="entry-icon ' + iconClass + '">' + icon + '</div>' +
+      '<div class="entry-details">' +
+        '<div class="entry-title">' + title + '</div>' +
+        (sub ? '<div class="entry-sub">' + sub + '</div>' : '') +
+      '</div>' +
+      '<span class="entry-time">' + timeStr + '</span>' +
+      '<button class="entry-delete" onclick="confirmDelete(\'' + e.id + '\')" title="Delete">&#215;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function confirmDelete(id) {
+  if (confirm('Delete this entry?')) deleteEntry(id);
+}
+
+function calcSleepMins(e) {
+  if (!e.sleepStart || !e.sleepEnd) return 0;
+  const [sh, sm] = e.sleepStart.split(':').map(Number);
+  const [eh, em] = e.sleepEnd.split(':').map(Number);
+  let startMins = sh * 60 + sm;
+  let endMins = eh * 60 + em;
+  if ((e.sleepEndDate && e.sleepEndDate !== e.date) || endMins < startMins) {
+    endMins += 24 * 60;
+  }
+  return endMins - startMins;
+}
+
+// ═══════════════════════════════════════════════════════
+// DATE NAV
+// ═══════════════════════════════════════════════════════
+function shiftDate(n) {
+  const inp = document.getElementById('viewDate');
+  inp.value = addDays(inp.value, n);
+  renderEntries();
+}
+
+// ═══════════════════════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════════════════════
+function openSummary(tab) {
+  document.getElementById('summaryOverlay').classList.add('active');
+  switchSummaryTab(tab);
+}
+function closeSummary() { document.getElementById('summaryOverlay').classList.remove('active'); }
+function closeSummaryBg(e) { if (e.target === document.getElementById('summaryOverlay')) closeSummary(); }
+
+function switchSummaryTab(tab) {
+  document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
+  document.getElementById('tabWeekly').classList.toggle('active', tab === 'weekly');
+
+  const body = document.getElementById('summaryBody');
+  const entries = loadEntries();
+  const dateStr = document.getElementById('viewDate').value;
+
+  if (tab === 'daily') {
+    document.getElementById('summaryTitle').textContent = 'Daily Summary \u2014 ' + formatDateShort(dateStr);
+    const dayEntries = entries.filter(e => e.date === dateStr);
+    const stats = calcDayStats(dayEntries);
+    body.innerHTML = renderDayStats(stats);
+  } else {
+    const weekStart = getWeekStart(dateStr);
+    document.getElementById('summaryTitle').textContent = 'Weekly Summary';
+    let html = '<div class="summary-day-list">';
+    html += '<div class="summary-day-row header"><span>Day</span><span>Sleep</span><span>Feed</span><span>Poo</span></div>';
+    let totals = { sleepMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(weekStart, i);
+      const dayEntries = entries.filter(e => e.date === d);
+      const stats = calcDayStats(dayEntries);
+      totals.sleepMins += stats.sleepMins;
+      totals.feedMl += stats.feedMl;
+      totals.feedCount += stats.feedCount;
+      totals.pooCount += stats.pooCount;
+      const dayName = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      const isToday = d === todayStr();
+      html += '<div class="summary-day-row"' + (isToday ? ' style="font-weight:600"' : '') + '>' +
+        '<span>' + dayName + '</span>' +
+        '<span>' + formatMins(stats.sleepMins) + '</span>' +
+        '<span>' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
+        '<span>' + stats.pooCount + '</span>' +
+      '</div>';
+    }
+    html += '<div class="summary-day-row" style="font-weight:700;border-top:2px solid var(--text)">' +
+      '<span>Total</span>' +
+      '<span>' + formatMins(totals.sleepMins) + '</span>' +
+      '<span>' + (totals.feedMl > 0 ? totals.feedMl + ' ml' : '-') + '</span>' +
+      '<span>' + totals.pooCount + '</span>' +
+    '</div>';
+    html += '<div class="summary-day-row" style="color:var(--text-light)">' +
+      '<span>Avg/day</span>' +
+      '<span>' + formatMins(Math.round(totals.sleepMins / 7)) + '</span>' +
+      '<span>' + (totals.feedMl > 0 ? Math.round(totals.feedMl / 7) + ' ml' : '-') + '</span>' +
+      '<span>' + (totals.pooCount / 7).toFixed(1) + '</span>' +
+    '</div>';
+    html += '</div>';
+    body.innerHTML = html;
+  }
+}
+
+function calcDayStats(dayEntries) {
+  let sleepMins = 0, feedMl = 0, feedCount = 0, pooCount = 0;
+  dayEntries.forEach(e => {
+    if (e.type === 'sleep') sleepMins += calcSleepMins(e);
+    if (e.type === 'feed') { feedCount++; feedMl += (e.volume || 0); }
+    if (e.type === 'poo') pooCount++;
+  });
+  return { sleepMins, feedMl, feedCount, pooCount };
+}
+
+function formatMins(m) {
+  if (m === 0) return '-';
+  const h = Math.floor(m / 60);
+  const mins = m % 60;
+  return h + 'h ' + mins + 'm';
+}
+
+function renderDayStats(stats) {
+  return '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F4A4; Total Sleep</span>' +
+      '<span class="stat-value sleep-color">' + formatMins(stats.sleepMins) + '</span>' +
+    '</div>' +
+    '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F37C; Total Feed Volume</span>' +
+      '<span class="stat-value feed-color">' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
+    '</div>' +
+    '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F37C; Number of Feedings</span>' +
+      '<span class="stat-value feed-color">' + stats.feedCount + '</span>' +
+    '</div>' +
+    '<div class="summary-stat">' +
+      '<span class="stat-label">&#x1F4A9; Poo Count</span>' +
+      '<span class="stat-value poo-color">' + stats.pooCount + '</span>' +
+    '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════════
+function exportData() {
+  const entries = loadEntries();
+  if (entries.length === 0) { alert('No data to export.'); return; }
+  const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','notes','text','createdAt'];
+  let csv = headers.join(',') + '\n';
+  entries.forEach(e => {
+    csv += headers.map(h => {
+      const v = e[h];
+      if (v == null) return '';
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    }).join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'niko-tracker-' + todayStr() + '.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTO-REFRESH — keep data in sync between parents
+// ═══════════════════════════════════════════════════════
+// Refresh every 30 seconds when page is visible
+let refreshInterval;
+function startAutoRefresh() {
+  refreshInterval = setInterval(() => {
+    if (!document.hidden) syncFromCloud();
+  }, 30000);
+}
+// Also refresh when page becomes visible (e.g. switching back to tab)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) syncFromCloud();
+});
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.getElementById('viewDate').value = todayStr();
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+syncFromCloud();
+startAutoRefresh();
+checkSleepActive();
+</script>
+</body>
+</html>
