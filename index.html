@@ -261,7 +261,10 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
 }
+.entry-card:active { background: var(--bg); }
 .entry-icon {
   width: 40px;
   height: 40px;
@@ -542,14 +545,14 @@ body {
   border: none;
   background: var(--bg);
   border-radius: 10px;
-  padding: 10px 20px;
-  font-size: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .nav-btn:active { background: var(--border); }
 
@@ -643,6 +646,28 @@ body {
   pointer-events: none;
 }
 .toast.show { opacity: 1; }
+
+/* Fun celebration toast */
+.fun-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: white;
+  color: var(--text);
+  padding: 24px 32px;
+  border-radius: 20px;
+  font-size: 22px;
+  font-weight: 700;
+  z-index: 310;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+.fun-toast .fun-icon { font-size: 44px; display: block; margin-bottom: 8px; }
+.fun-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 </style>
 </head>
 <body>
@@ -719,6 +744,9 @@ body {
 
 <!-- Bottom nav -->
 <div class="bottom-nav">
+  <button class="nav-btn" onclick="openSummary('24h')">
+    &#x23F0; 24h
+  </button>
   <button class="nav-btn" onclick="openSummary('daily')">
     &#x1F4CA; Daily
   </button>
@@ -732,6 +760,7 @@ body {
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+<div class="fun-toast" id="funToast"><span class="fun-icon" id="funIcon"></span><span id="funMsg"></span></div>
 
 <!-- Entry Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalBg(event)">
@@ -742,6 +771,8 @@ body {
     </div>
     <form id="entryForm" onsubmit="saveEntry(event)">
       <input type="hidden" id="entryType">
+      <input type="hidden" id="editingId">
+      <input type="hidden" id="editingFbKey">
 
       <!-- Sleep fields -->
       <div id="sleepFields" style="display:none">
@@ -960,6 +991,33 @@ async function deleteEntry(id) {
   }
 }
 
+// --- Update an existing entry in Firebase ---
+async function updateEntry(id, fbKey, updatedData) {
+  // Optimistic: update local cache
+  const idx = entriesCache.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    Object.assign(entriesCache[idx], updatedData);
+    renderEntries();
+    renderTimeSinceLast();
+  }
+
+  if (fbKey) {
+    try {
+      await fetch(DB + '/entries/' + fbKey + '.json', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      showToast('Updated &#10003;');
+      setSyncStatus('ok', 'Synced just now');
+    } catch (err) {
+      console.error('Update failed:', err);
+      showToast('Update failed!');
+      setSyncStatus('error', 'Update failed \u2014 tap to retry');
+    }
+  }
+}
+
 // --- Save / clear sleep active state to Firebase ---
 async function saveSleepActive(data) {
   if (data) {
@@ -1028,6 +1086,16 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 1500);
 }
 
+let funToastTimer;
+function showFunToast(icon, msg) {
+  const el = document.getElementById('funToast');
+  document.getElementById('funIcon').textContent = icon;
+  document.getElementById('funMsg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(funToastTimer);
+  funToastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
 // ═══════════════════════════════════════════════════════
 // SLEEP BANNER
 // ═══════════════════════════════════════════════════════
@@ -1069,6 +1137,10 @@ function openModal(type) {
   const titles = { sleep: '&#x1F4A4; Log Sleep', feed: '&#x1F37C; Log Feeding', poo: '&#x1F4A9; Log Poo', note: '&#x1F4DD; Add Note' };
   document.getElementById('modalTitle').innerHTML = titles[type];
   document.getElementById('entryType').value = type;
+
+  // Clear edit state
+  document.getElementById('editingId').value = '';
+  document.getElementById('editingFbKey').value = '';
 
   document.getElementById('sleepFields').style.display = 'none';
   document.getElementById('feedFields').style.display = 'none';
@@ -1120,6 +1192,60 @@ function openModal(type) {
   overlay.classList.add('active');
 }
 
+function editEntry(id) {
+  const entry = entriesCache.find(e => e.id === id);
+  if (!entry) return;
+
+  const type = entry.type;
+  const overlay = document.getElementById('modalOverlay');
+  const editTitles = { sleep: '&#x1F4A4; Edit Sleep', feed: '&#x1F37C; Edit Feeding', poo: '&#x1F4A9; Edit Poo', note: '&#x1F4DD; Edit Note' };
+  document.getElementById('modalTitle').innerHTML = editTitles[type];
+  document.getElementById('entryType').value = type;
+
+  // Set edit state
+  document.getElementById('editingId').value = entry.id;
+  document.getElementById('editingFbKey').value = entry._fbKey || '';
+
+  document.getElementById('sleepFields').style.display = 'none';
+  document.getElementById('feedFields').style.display = 'none';
+  document.getElementById('pooFields').style.display = 'none';
+  document.getElementById('noteFields').style.display = 'none';
+
+  const btn = document.getElementById('submitBtn');
+  btn.className = 'submit-btn ' + type + '-btn';
+  btn.disabled = false;
+
+  if (type === 'sleep') {
+    document.getElementById('sleepFields').style.display = 'block';
+    document.getElementById('sleepStart').value = entry.sleepStart || '';
+    document.getElementById('sleepEnd').value = entry.sleepEnd || '';
+    document.getElementById('sleepDate').value = entry.date || '';
+    btn.textContent = 'Update Sleep';
+  } else if (type === 'feed') {
+    document.getElementById('feedFields').style.display = 'block';
+    document.getElementById('feedTime').value = entry.time || '';
+    document.getElementById('feedVolume').value = entry.volume || '';
+    document.getElementById('feedType').value = entry.feedType || 'formula';
+    document.getElementById('feedDate').value = entry.date || '';
+    btn.textContent = 'Update Feeding';
+  } else if (type === 'poo') {
+    document.getElementById('pooFields').style.display = 'block';
+    document.getElementById('pooTime').value = entry.time || '';
+    document.getElementById('pooPee').value = entry.pee || 'yes';
+    document.getElementById('pooDate').value = entry.date || '';
+    document.getElementById('pooNotes').value = entry.notes || '';
+    btn.textContent = 'Update Poo';
+  } else {
+    document.getElementById('noteFields').style.display = 'block';
+    document.getElementById('noteTime').value = entry.time || '';
+    document.getElementById('noteDate').value = entry.date || '';
+    document.getElementById('noteText').value = entry.text || '';
+    btn.textContent = 'Update Note';
+  }
+
+  overlay.classList.add('active');
+}
+
 function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 function closeModalBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
@@ -1129,21 +1255,29 @@ async function saveEntry(e) {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
 
+  const editingId = document.getElementById('editingId').value;
+  const editingFbKey = document.getElementById('editingFbKey').value;
+  const isEditing = !!editingId;
+
   if (type === 'sleep') {
     const start = document.getElementById('sleepStart').value;
     const end = document.getElementById('sleepEnd').value;
     const date = document.getElementById('sleepDate').value;
     if (!start) { btn.disabled = false; return; }
 
-    const active = localStorage.getItem('niko_sleep_active');
-    if (active && end) {
-      await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: todayStr() });
-      await saveSleepActive(null);
-    } else if (end) {
-      await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: date });
+    if (isEditing) {
+      await updateEntry(editingId, editingFbKey, { sleepStart: start, sleepEnd: end || null, sleepEndDate: end ? date : null, date });
     } else {
-      await saveSleepActive({ time: start, date });
-      showToast('Sleep started &#x1F4A4;');
+      const active = localStorage.getItem('niko_sleep_active');
+      if (active && end) {
+        await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: todayStr() });
+        await saveSleepActive(null);
+      } else if (end) {
+        await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: date });
+      } else {
+        await saveSleepActive({ time: start, date });
+        showToast('Sleep started &#x1F4A4;');
+      }
     }
   } else if (type === 'feed') {
     const time = document.getElementById('feedTime').value;
@@ -1151,20 +1285,37 @@ async function saveEntry(e) {
     const feedType = document.getElementById('feedType').value;
     const date = document.getElementById('feedDate').value;
     if (!time) { btn.disabled = false; return; }
-    await addEntry({ type: 'feed', date, time, volume: volume ? Number(volume) : null, feedType });
+
+    if (isEditing) {
+      await updateEntry(editingId, editingFbKey, { time, volume: volume ? Number(volume) : null, feedType, date });
+    } else {
+      await addEntry({ type: 'feed', date, time, volume: volume ? Number(volume) : null, feedType });
+      showFunToast('\uD83C\uDF7C', '\u3054\u3061\u305D\u3046\u3055\u307E\u3067\u3057\u305F\uFF01');
+    }
   } else if (type === 'poo') {
     const time = document.getElementById('pooTime').value;
     const pee = document.getElementById('pooPee').value;
     const date = document.getElementById('pooDate').value;
     const notes = document.getElementById('pooNotes').value;
     if (!time) { btn.disabled = false; return; }
-    await addEntry({ type: 'poo', date, time, pee, notes });
+
+    if (isEditing) {
+      await updateEntry(editingId, editingFbKey, { time, pee, date, notes });
+    } else {
+      await addEntry({ type: 'poo', date, time, pee, notes });
+      showFunToast('\uD83D\uDCA9', '\u304A\u75B2\u308C\u3055\u307E\u3067\u3057\u305F\uFF01');
+    }
   } else {
     const time = document.getElementById('noteTime').value;
     const date = document.getElementById('noteDate').value;
     const text = document.getElementById('noteText').value;
     if (!text) { btn.disabled = false; return; }
-    await addEntry({ type: 'note', date, time, text });
+
+    if (isEditing) {
+      await updateEntry(editingId, editingFbKey, { time, date, text });
+    } else {
+      await addEntry({ type: 'note', date, time, text });
+    }
   }
 
   closeModal();
@@ -1225,14 +1376,14 @@ function renderEntries() {
       title = 'Note';
       sub = e.text || '';
     }
-    return '<div class="entry-card">' +
+    return '<div class="entry-card" onclick="editEntry(\'' + e.id + '\')">' +
       '<div class="entry-icon ' + iconClass + '">' + icon + '</div>' +
       '<div class="entry-details">' +
         '<div class="entry-title">' + title + '</div>' +
         (sub ? '<div class="entry-sub">' + sub + '</div>' : '') +
       '</div>' +
       '<span class="entry-time">' + timeStr + '</span>' +
-      '<button class="entry-delete" onclick="confirmDelete(\'' + e.id + '\')" title="Delete">&#215;</button>' +
+      '<button class="entry-delete" onclick="event.stopPropagation();confirmDelete(\'' + e.id + '\')" title="Delete">&#215;</button>' +
     '</div>';
   }).join('');
 }
