@@ -1087,6 +1087,40 @@ function showToast(msg) {
 }
 
 let funToastTimer;
+const funToasts = {
+  feed: [
+    '\u3054\u3061\u305D\u3046\u3055\u307E\u3067\u3057\u305F\uFF01',
+    '\u304A\u306A\u304B\u3044\u3063\u3071\u3044\uFF01',
+    '\u3082\u3050\u3082\u3050\u30BF\u30A4\u30E0\u7D42\u4E86\uFF01',
+    '\u30DF\u30EB\u30AF\u6700\u9AD8\uFF01',
+    '\u3088\u304F\u98F2\u307F\u307E\u3057\u305F\uFF01'
+  ],
+  poo: [
+    '\u304A\u75B2\u308C\u3055\u307E\u3067\u3057\u305F\uFF01',
+    '\u3046\u3093\u3061\u5927\u6210\u529F\uFF01',
+    '\u30B9\u30C3\u30AD\u30EA\u3057\u305F\u306D\uFF01',
+    '\u304A\u306A\u304B\u8EFD\u304F\u306A\u3063\u305F\u306D\uFF01',
+    '\u4ECA\u65E5\u3082\u3088\u304F\u51FA\u307E\u3057\u305F\uFF01'
+  ],
+  sleepStart: [
+    '\u304A\u3084\u3059\u307F\u306A\u3055\u3044\uFF01',
+    '\u3044\u3044\u5922\u898B\u3066\u306D\uFF01',
+    '\u3059\u3084\u3059\u3084\u30BF\u30A4\u30E0\uFF01',
+    '\u304A\u3084\u3059\u307F\u3001\u30CB\u30B3\u3061\u3083\u3093\uFF01',
+    '\u5922\u306E\u4E16\u754C\u3078\u51FA\u767A\uFF01'
+  ],
+  sleepEnd: [
+    '\u304A\u306F\u3088\u3046\u3054\u3056\u3044\u307E\u3059\uFF01',
+    '\u304A\u306F\u3088\u3046\u3001\u30CB\u30B3\u3061\u3083\u3093\uFF01',
+    '\u3088\u304F\u5BDD\u305F\u306D\uFF01',
+    '\u5143\u6C17\u306B\u8D77\u304D\u305F\uFF01',
+    '\u4E16\u754C\u304C\u5F85\u3063\u3066\u308B\u3088\uFF01'
+  ]
+};
+function randomFunToast(category) {
+  const msgs = funToasts[category];
+  return msgs[Math.floor(Math.random() * msgs.length)];
+}
 function showFunToast(icon, msg) {
   const el = document.getElementById('funToast');
   document.getElementById('funIcon').textContent = icon;
@@ -1124,6 +1158,7 @@ async function openSleepWake() {
     sleepEndDate: todayStr()
   });
   await saveSleepActive(null);
+  showFunToast('\u2600\uFE0F', randomFunToast('sleepEnd'));
   checkSleepActive();
   renderEntries();
   renderTimeSinceLast();
@@ -1272,11 +1307,13 @@ async function saveEntry(e) {
       if (active && end) {
         await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: todayStr() });
         await saveSleepActive(null);
+        showFunToast('\u2600\uFE0F', randomFunToast('sleepEnd'));
       } else if (end) {
         await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: date });
+        showFunToast('\u2600\uFE0F', randomFunToast('sleepEnd'));
       } else {
         await saveSleepActive({ time: start, date });
-        showToast('Sleep started &#x1F4A4;');
+        showFunToast('\uD83C\uDF19', randomFunToast('sleepStart'));
       }
     }
   } else if (type === 'feed') {
@@ -1290,7 +1327,7 @@ async function saveEntry(e) {
       await updateEntry(editingId, editingFbKey, { time, volume: volume ? Number(volume) : null, feedType, date });
     } else {
       await addEntry({ type: 'feed', date, time, volume: volume ? Number(volume) : null, feedType });
-      showFunToast('\uD83C\uDF7C', '\u3054\u3061\u305D\u3046\u3055\u307E\u3067\u3057\u305F\uFF01');
+      showFunToast('\uD83C\uDF7C', randomFunToast('feed'));
     }
   } else if (type === 'poo') {
     const time = document.getElementById('pooTime').value;
@@ -1303,7 +1340,7 @@ async function saveEntry(e) {
       await updateEntry(editingId, editingFbKey, { time, pee, date, notes });
     } else {
       await addEntry({ type: 'poo', date, time, pee, notes });
-      showFunToast('\uD83D\uDCA9', '\u304A\u75B2\u308C\u3055\u307E\u3067\u3057\u305F\uFF01');
+      showFunToast('\uD83D\uDCA9', randomFunToast('poo'));
     }
   } else {
     const time = document.getElementById('noteTime').value;
