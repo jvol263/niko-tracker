@@ -45,9 +45,37 @@ body {
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  /* sticky already acts as position:relative for child absolute positioning */
 }
 .header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
 .header .date-display { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+/* Language toggle */
+.lang-toggle {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.lang-btn.active {
+  background: rgba(255,255,255,0.35);
+  color: white;
+}
 
 /* Sync indicator */
 .sync-bar {
@@ -673,8 +701,12 @@ body {
 <body>
 
 <div class="header">
-  <h1>&#x1F476; Niko Tracker</h1>
+  <h1>&#x1F476; <span id="appTitle">Niko Tracker</span></h1>
   <div class="date-display" id="headerDate"></div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="langEn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="langJa" onclick="setLang('ja')">JP</button>
+  </div>
 </div>
 <div class="sync-bar" id="syncBar"></div>
 
@@ -691,36 +723,36 @@ body {
 <div class="quick-actions">
   <button class="quick-btn sleep-btn" onclick="openModal('sleep')">
     <span class="icon">&#x1F4A4;</span>
-    Sleep
+    <span id="btnSleepLabel">Sleep</span>
   </button>
   <button class="quick-btn feed-btn" onclick="openModal('feed')">
     <span class="icon">&#x1F37C;</span>
-    Feeding
+    <span id="btnFeedLabel">Feeding</span>
   </button>
   <button class="quick-btn poo-btn" onclick="openModal('poo')">
     <span class="icon">&#x1F4A9;</span>
-    Poo
+    <span id="btnPooLabel">Poo</span>
   </button>
   <button class="quick-btn note-btn" onclick="openModal('note')">
     <span class="icon">&#x1F4DD;</span>
-    Note
+    <span id="btnNoteLabel">Note</span>
   </button>
 </div>
 
 <!-- Time Since Last display -->
 <div class="time-since-row" id="timeSinceRow">
   <div class="time-since-card">
-    <div class="tsl-label">Last Fed</div>
+    <div class="tsl-label" id="tslFeedLabel">Last Fed</div>
     <div class="tsl-value feed-color" id="tslFeed">--</div>
     <div class="tsl-sub" id="tslFeedSub"></div>
   </div>
   <div class="time-since-card">
-    <div class="tsl-label">Last Slept</div>
+    <div class="tsl-label" id="tslSleepLabel">Last Slept</div>
     <div class="tsl-value sleep-color" id="tslSleep">--</div>
     <div class="tsl-sub" id="tslSleepSub"></div>
   </div>
   <div class="time-since-card">
-    <div class="tsl-label">Last Poo</div>
+    <div class="tsl-label" id="tslPooLabel">Last Poo</div>
     <div class="tsl-value poo-color" id="tslPoo">--</div>
     <div class="tsl-sub" id="tslPooSub"></div>
   </div>
@@ -739,22 +771,22 @@ body {
 
 <!-- Data management -->
 <div class="data-actions">
-  <button class="data-btn" onclick="exportData()">&#x1F4E5; Export CSV</button>
+  <button class="data-btn" id="exportBtn" onclick="exportData()">&#x1F4E5; Export CSV</button>
 </div>
 
 <!-- Bottom nav -->
 <div class="bottom-nav">
   <button class="nav-btn" onclick="openSummary('24h')">
-    &#x23F0; 24h
+    &#x23F0; <span id="navLabel24h">24h</span>
   </button>
   <button class="nav-btn" onclick="openSummary('daily')">
-    &#x1F4CA; Daily
+    &#x1F4CA; <span id="navLabelDaily">Daily</span>
   </button>
   <button class="nav-btn" onclick="openSummary('weekly')">
-    &#x1F4C5; Weekly
+    &#x1F4C5; <span id="navLabelWeekly">Weekly</span>
   </button>
   <button class="nav-btn" onclick="openTrends()">
-    &#x1F4C8; Trends
+    &#x1F4C8; <span id="navLabelTrends">Trends</span>
   </button>
 </div>
 
@@ -778,16 +810,16 @@ body {
       <div id="sleepFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label>Fell Asleep</label>
+            <label id="labelFellAsleep">Fell Asleep</label>
             <input type="time" id="sleepStart" step="60">
           </div>
           <div class="form-group">
-            <label>Woke Up (optional)</label>
+            <label id="labelWokeUp">Woke Up (optional)</label>
             <input type="time" id="sleepEnd" step="60">
           </div>
         </div>
         <div class="form-group">
-          <label>Date</label>
+          <label id="labelSleepDate">Date</label>
           <input type="date" id="sleepDate">
         </div>
       </div>
@@ -796,24 +828,24 @@ body {
       <div id="feedFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label>Time</label>
+            <label id="labelFeedTime">Time</label>
             <input type="time" id="feedTime" step="60">
           </div>
           <div class="form-group">
-            <label>Volume (ml)</label>
+            <label id="labelFeedVolume">Volume (ml)</label>
             <input type="number" id="feedVolume" inputmode="numeric" placeholder="e.g. 90" min="0" step="5">
           </div>
         </div>
         <div class="form-group">
-          <label>Type</label>
+          <label id="labelFeedType">Type</label>
           <select id="feedType">
-            <option value="formula">Formula</option>
-            <option value="breast">Breast Milk</option>
-            <option value="mixed">Mixed</option>
+            <option value="formula" id="optFormula">Formula</option>
+            <option value="breast" id="optBreast">Breast Milk</option>
+            <option value="mixed" id="optMixed">Mixed</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Date</label>
+          <label id="labelFeedDate">Date</label>
           <input type="date" id="feedDate">
         </div>
       </div>
@@ -822,23 +854,23 @@ body {
       <div id="pooFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label>Time</label>
+            <label id="labelPooTime">Time</label>
             <input type="time" id="pooTime" step="60">
           </div>
           <div class="form-group">
-            <label>Pee too?</label>
+            <label id="labelPeeToo">Pee too?</label>
             <select id="pooPee">
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
+              <option value="yes" id="optPeeYes">Yes</option>
+              <option value="no" id="optPeeNo">No</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label>Date</label>
+          <label id="labelPooDate">Date</label>
           <input type="date" id="pooDate">
         </div>
         <div class="form-group">
-          <label>Notes (optional)</label>
+          <label id="labelPooNotes">Notes (optional)</label>
           <input type="text" id="pooNotes" placeholder="Color, consistency...">
         </div>
       </div>
@@ -847,16 +879,16 @@ body {
       <div id="noteFields" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label>Time</label>
+            <label id="labelNoteTime">Time</label>
             <input type="time" id="noteTime" step="60">
           </div>
           <div class="form-group">
-            <label>Date</label>
+            <label id="labelNoteDate">Date</label>
             <input type="date" id="noteDate">
           </div>
         </div>
         <div class="form-group">
-          <label>Note</label>
+          <label id="labelNote">Note</label>
           <textarea id="noteText" placeholder="Anything to remember..."></textarea>
         </div>
       </div>
@@ -874,9 +906,9 @@ body {
       <button class="modal-close" onclick="closeSummary()">&#215;</button>
     </div>
     <div class="summary-tabs">
-      <button class="summary-tab" id="tab24h" onclick="switchSummaryTab('24h')">24h</button>
-      <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')">Daily</button>
-      <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')">Weekly</button>
+      <button class="summary-tab" id="tab24h" onclick="switchSummaryTab('24h')"><span id="tab24hLabel">24h</span></button>
+      <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')"><span id="tabDailyLabel">Daily</span></button>
+      <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')"><span id="tabWeeklyLabel">Weekly</span></button>
     </div>
     <div id="summaryBody"></div>
   </div>
@@ -886,7 +918,7 @@ body {
 <div class="trends-overlay" id="trendsOverlay" onclick="closeTrendsBg(event)">
   <div class="trends-card">
     <div class="modal-header">
-      <h2>&#x1F4C8; Trends (14 Days)</h2>
+      <h2 id="trendsTitle">&#x1F4C8; Trends (14 Days)</h2>
       <button class="modal-close" onclick="closeTrends()">&#215;</button>
     </div>
     <div id="trendsBody"></div>
@@ -909,7 +941,7 @@ let isSyncing = false;
 
 // --- Read all entries from Firebase ---
 async function syncFromCloud() {
-  setSyncStatus('loading', 'Syncing...');
+  setSyncStatus('loading', t('syncing'));
   try {
     const res = await fetch(DB + '/entries.json');
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -930,13 +962,13 @@ async function syncFromCloud() {
     } else {
       localStorage.removeItem('niko_sleep_active');
     }
-    setSyncStatus('ok', 'Synced just now');
+    setSyncStatus('ok', t('syncedJustNow'));
     renderEntries();
     renderTimeSinceLast();
     checkSleepActive();
   } catch (err) {
     console.error('Sync failed:', err);
-    setSyncStatus('error', 'Sync failed \u2014 tap to retry');
+    setSyncStatus('error', t('syncFailed'));
   }
 }
 
@@ -960,12 +992,12 @@ async function addEntry(entry) {
     const result = await res.json();
     // Store the Firebase key
     entry._fbKey = result.name;
-    showToast('Saved &#10003;');
-    setSyncStatus('ok', 'Synced just now');
+    showToast(t('savedCheck'));
+    setSyncStatus('ok', t('syncedJustNow'));
   } catch (err) {
     console.error('Save failed:', err);
-    showToast('Save failed! Will retry...');
-    setSyncStatus('error', 'Save failed \u2014 tap to retry');
+    showToast(t('saveFailedToast'));
+    setSyncStatus('error', t('saveFailed'));
   }
 }
 
@@ -982,11 +1014,11 @@ async function deleteEntry(id) {
   if (entry._fbKey) {
     try {
       await fetch(DB + '/entries/' + entry._fbKey + '.json', { method: 'DELETE' });
-      showToast('Deleted');
-      setSyncStatus('ok', 'Synced just now');
+      showToast(t('deleted'));
+      setSyncStatus('ok', t('syncedJustNow'));
     } catch (err) {
       console.error('Delete failed:', err);
-      setSyncStatus('error', 'Delete failed \u2014 tap to retry');
+      setSyncStatus('error', t('deleteFailed'));
     }
   }
 }
@@ -1008,12 +1040,12 @@ async function updateEntry(id, fbKey, updatedData) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
-      showToast('Updated &#10003;');
-      setSyncStatus('ok', 'Synced just now');
+      showToast(t('updatedCheck'));
+      setSyncStatus('ok', t('syncedJustNow'));
     } catch (err) {
       console.error('Update failed:', err);
-      showToast('Update failed!');
-      setSyncStatus('error', 'Update failed \u2014 tap to retry');
+      showToast(t('updateFailedToast'));
+      setSyncStatus('error', t('updateFailed'));
     }
   }
 }
@@ -1051,7 +1083,8 @@ function formatTime12(t) {
 }
 function formatDateShort(d) {
   const dt = new Date(d + 'T00:00:00');
-  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  return dt.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 function getWeekStart(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -1131,6 +1164,361 @@ function showFunToast(icon, msg) {
 }
 
 // ═══════════════════════════════════════════════════════
+// i18n — LANGUAGE TOGGLE
+// ═══════════════════════════════════════════════════════
+let currentLang = localStorage.getItem('niko_lang') || 'en';
+
+const i18n = {
+  en: {
+    appTitle: 'Niko Tracker',
+    // Quick-add buttons
+    sleep: 'Sleep',
+    feeding: 'Feeding',
+    poo: 'Poo',
+    note: 'Note',
+    // Time Since Last
+    lastFed: 'Last Fed',
+    lastSlept: 'Last Slept',
+    lastPoo: 'Last Poo',
+    // Section title
+    todaysLog: "Today's Log",
+    // Empty state
+    emptyState: 'No entries yet for this day.<br>Tap a button above to log!',
+    // Modal titles
+    logSleep: 'Log Sleep',
+    logFeeding: 'Log Feeding',
+    logPoo: 'Log Poo',
+    addNote: 'Add Note',
+    editSleep: 'Edit Sleep',
+    editFeeding: 'Edit Feeding',
+    editPoo: 'Edit Poo',
+    editNote: 'Edit Note',
+    // Form labels
+    fellAsleep: 'Fell Asleep',
+    wokeUp: 'Woke Up (optional)',
+    date: 'Date',
+    time: 'Time',
+    volumeMl: 'Volume (ml)',
+    type: 'Type',
+    peeToo: 'Pee too?',
+    notesOptional: 'Notes (optional)',
+    noteLabel: 'Note',
+    // Select options
+    formula: 'Formula',
+    breastMilk: 'Breast Milk',
+    mixed: 'Mixed',
+    yes: 'Yes',
+    no: 'No',
+    // Submit buttons
+    startSleep: 'Start Sleep',
+    logWakeUp: 'Log Wake Up',
+    saveFeeding: 'Save Feeding',
+    savePoo: 'Save Poo',
+    saveNote: 'Save Note',
+    updateSleep: 'Update Sleep',
+    updateFeeding: 'Update Feeding',
+    updatePoo: 'Update Poo',
+    updateNote: 'Update Note',
+    // Sleep banner
+    sleepingSince: 'Sleeping since',
+    tapToLogWakeUp: '— tap to log wake up',
+    // Sync
+    synced: 'Synced',
+    syncing: 'Syncing...',
+    syncedJustNow: 'Synced just now',
+    syncFailed: 'Sync failed — tap to retry',
+    saveFailed: 'Save failed — tap to retry',
+    updateFailed: 'Update failed — tap to retry',
+    deleteFailed: 'Delete failed — tap to retry',
+    // Toasts
+    savedCheck: 'Saved &#10003;',
+    deleted: 'Deleted',
+    updatedCheck: 'Updated &#10003;',
+    saveFailedToast: 'Save failed! Will retry...',
+    updateFailedToast: 'Update failed!',
+    deleteConfirm: 'Delete this entry?',
+    // Summary
+    last24Hours: 'Last 24 Hours',
+    dailySummary: 'Daily Summary',
+    weeklySummary: 'Weekly Summary',
+    tab24h: '24h',
+    tabDaily: 'Daily',
+    tabWeekly: 'Weekly',
+    totalSleep: 'Total Sleep',
+    totalFeedVolume: 'Total Feed Volume',
+    numberOfFeedings: 'Number of Feedings',
+    pooCount: 'Poo Count',
+    longestSleepStretch: 'Longest Sleep Stretch',
+    sinceLastFeed: 'Since Last Feed',
+    sinceLastPoo: 'Since Last Poo',
+    // Weekly table
+    dayCol: 'Day',
+    sleepCol: 'Sleep',
+    feedCol: 'Feed',
+    pooCol: 'Poo',
+    total: 'Total',
+    avgPerDay: 'Avg/day',
+    // Trends
+    trends14Days: 'Trends (14 Days)',
+    dailySleepHours: 'Daily Sleep (hours)',
+    dailyFeedVolumeMl: 'Daily Feed Volume (ml)',
+    longestSleep: 'Longest Sleep',
+    avgFeedGap: 'Avg Feed Gap',
+    pooFrequency: 'Poo Frequency',
+    dayVsNightSleep: 'Day vs Night Sleep',
+    past7Days: 'past 7 days',
+    betweenFeedings: 'between feedings',
+    dayNightRange: '7am–7pm vs 7pm–7am',
+    dayLabel: 'Day',
+    nightLabel: 'Night',
+    perDay: '/day',
+    // Timeline entry titles
+    sleepTitle: 'Sleep',
+    fellAsleepTitle: 'Fell Asleep',
+    stillSleeping: 'Still sleeping...',
+    formulaTitle: 'Formula',
+    breastMilkTitle: 'Breast Milk',
+    mixedFeedTitle: 'Mixed Feed',
+    pooTitle: 'Poo',
+    pooPeeTitle: 'Poo + Pee',
+    noteTitle: 'Note',
+    volumeNotRecorded: 'Volume not recorded',
+    // Time format
+    ago: 'ago',
+    justNow: 'just now',
+    sleepingNow: 'sleeping now',
+    now: 'Now',
+    // Data
+    exportCsv: 'Export CSV',
+    noDataExport: 'No data to export.',
+    // Nav buttons
+    nav24h: '24h',
+    navDaily: 'Daily',
+    navWeekly: 'Weekly',
+    navTrends: 'Trends',
+    // Placeholders
+    phVolume: 'e.g. 90',
+    phPooNotes: 'Color, consistency...',
+    phNote: 'Anything to remember...',
+    // Sleep banner icon
+    sleepBannerIcon: '&#x1F4A4;'
+  },
+  ja: {
+    appTitle: 'ニコトラッカー',
+    sleep: 'ねんね',
+    feeding: 'ミルク',
+    poo: 'うんち',
+    note: 'メモ',
+    lastFed: '最後のミルク',
+    lastSlept: '最後のねんね',
+    lastPoo: '最後のうんち',
+    todaysLog: '今日の記録',
+    emptyState: 'まだ記録がありません。<br>上のボタンをタップ！',
+    logSleep: 'ねんね記録',
+    logFeeding: 'ミルク記録',
+    logPoo: 'うんち記録',
+    addNote: 'メモ追加',
+    editSleep: 'ねんね編集',
+    editFeeding: 'ミルク編集',
+    editPoo: 'うんち編集',
+    editNote: 'メモ編集',
+    fellAsleep: '寝た時間',
+    wokeUp: '起きた時間（任意）',
+    date: '日付',
+    time: '時間',
+    volumeMl: '量（ml）',
+    type: '種類',
+    peeToo: 'おしっこも？',
+    notesOptional: 'メモ（任意）',
+    noteLabel: 'メモ',
+    formula: 'ミルク',
+    breastMilk: '母乳',
+    mixed: '混合',
+    yes: 'はい',
+    no: 'いいえ',
+    startSleep: 'ねんね開始',
+    logWakeUp: '起きた記録',
+    saveFeeding: 'ミルク保存',
+    savePoo: 'うんち保存',
+    saveNote: 'メモ保存',
+    updateSleep: 'ねんね更新',
+    updateFeeding: 'ミルク更新',
+    updatePoo: 'うんち更新',
+    updateNote: 'メモ更新',
+    sleepingSince: 'ねんね中',
+    tapToLogWakeUp: '— タップで起床記録',
+    synced: '同期済み',
+    syncing: '同期中...',
+    syncedJustNow: '同期完了',
+    syncFailed: '同期失敗 — タップで再試行',
+    saveFailed: '保存失敗 — タップで再試行',
+    updateFailed: '更新失敗 — タップで再試行',
+    deleteFailed: '削除失敗 — タップで再試行',
+    savedCheck: '保存 &#10003;',
+    deleted: '削除しました',
+    updatedCheck: '更新 &#10003;',
+    saveFailedToast: '保存失敗！再試行します...',
+    updateFailedToast: '更新失敗！',
+    deleteConfirm: 'この記録を削除しますか？',
+    last24Hours: '過去24時間',
+    dailySummary: '日次サマリー',
+    weeklySummary: '週次サマリー',
+    tab24h: '24時間',
+    tabDaily: '日次',
+    tabWeekly: '週次',
+    totalSleep: '合計睡眠',
+    totalFeedVolume: '合計ミルク量',
+    numberOfFeedings: 'ミルク回数',
+    pooCount: 'うんち回数',
+    longestSleepStretch: '最長睡眠',
+    sinceLastFeed: '最後のミルクから',
+    sinceLastPoo: '最後のうんちから',
+    dayCol: '日',
+    sleepCol: 'ねんね',
+    feedCol: 'ミルク',
+    pooCol: 'うんち',
+    total: '合計',
+    avgPerDay: '平均/日',
+    trends14Days: 'トレンド（14日間）',
+    dailySleepHours: '日次睡眠（時間）',
+    dailyFeedVolumeMl: '日次ミルク量（ml）',
+    longestSleep: '最長睡眠',
+    avgFeedGap: '平均ミルク間隔',
+    pooFrequency: 'うんち頻度',
+    dayVsNightSleep: '昼 vs 夜の睡眠',
+    past7Days: '過去7日間',
+    betweenFeedings: 'ミルクの間隔',
+    dayNightRange: '7時〜19時 vs 19時〜7時',
+    dayLabel: '昼',
+    nightLabel: '夜',
+    perDay: '/日',
+    sleepTitle: 'ねんね',
+    fellAsleepTitle: '寝ました',
+    stillSleeping: 'まだ寝てます...',
+    formulaTitle: 'ミルク',
+    breastMilkTitle: '母乳',
+    mixedFeedTitle: '混合',
+    pooTitle: 'うんち',
+    pooPeeTitle: 'うんち + おしっこ',
+    noteTitle: 'メモ',
+    volumeNotRecorded: '量の記録なし',
+    ago: '前',
+    justNow: 'たった今',
+    sleepingNow: 'ねんね中',
+    now: '今',
+    exportCsv: 'CSVエクスポート',
+    noDataExport: 'データがありません。',
+    nav24h: '24時間',
+    navDaily: '日次',
+    navWeekly: '週次',
+    navTrends: 'トレンド',
+    phVolume: '例: 90',
+    phPooNotes: '色、固さなど...',
+    phNote: '覚えておきたいこと...',
+    sleepBannerIcon: '&#x1F4A4;'
+  }
+};
+
+function t(key) {
+  return (i18n[currentLang] && i18n[currentLang][key]) || i18n.en[key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('niko_lang', lang);
+  document.getElementById('langEn').classList.toggle('active', lang === 'en');
+  document.getElementById('langJa').classList.toggle('active', lang === 'ja');
+  applyLang();
+}
+
+function applyLang() {
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+
+  // Header
+  document.getElementById('appTitle').textContent = t('appTitle');
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  // Quick-add buttons
+  document.getElementById('btnSleepLabel').textContent = t('sleep');
+  document.getElementById('btnFeedLabel').textContent = t('feeding');
+  document.getElementById('btnPooLabel').textContent = t('poo');
+  document.getElementById('btnNoteLabel').textContent = t('note');
+
+  // Time Since Last
+  document.getElementById('tslFeedLabel').textContent = t('lastFed');
+  document.getElementById('tslSleepLabel').textContent = t('lastSlept');
+  document.getElementById('tslPooLabel').textContent = t('lastPoo');
+
+  // Sleep banner
+  updateSleepBannerText();
+
+  // Sync text
+  const syncText = document.getElementById('syncText').textContent;
+  // Only update if it's one of the known sync states
+  if (syncText === 'Synced' || syncText === '同期済み') document.getElementById('syncText').textContent = t('synced');
+
+  // Section title - re-render
+  renderEntries();
+
+  // Summary tabs
+  document.getElementById('tab24hLabel').textContent = t('tab24h');
+  document.getElementById('tabDailyLabel').textContent = t('tabDaily');
+  document.getElementById('tabWeeklyLabel').textContent = t('tabWeekly');
+
+  // Nav buttons
+  document.getElementById('navLabel24h').textContent = t('nav24h');
+  document.getElementById('navLabelDaily').textContent = t('navDaily');
+  document.getElementById('navLabelWeekly').textContent = t('navWeekly');
+  document.getElementById('navLabelTrends').textContent = t('navTrends');
+
+  // Export button
+  document.getElementById('exportBtn').innerHTML = '&#x1F4E5; ' + t('exportCsv');
+
+  // Form labels
+  document.getElementById('labelFellAsleep').textContent = t('fellAsleep');
+  document.getElementById('labelWokeUp').textContent = t('wokeUp');
+  document.getElementById('labelSleepDate').textContent = t('date');
+  document.getElementById('labelFeedTime').textContent = t('time');
+  document.getElementById('labelFeedVolume').textContent = t('volumeMl');
+  document.getElementById('labelFeedType').textContent = t('type');
+  document.getElementById('labelFeedDate').textContent = t('date');
+  document.getElementById('labelPooTime').textContent = t('time');
+  document.getElementById('labelPeeToo').textContent = t('peeToo');
+  document.getElementById('labelPooDate').textContent = t('date');
+  document.getElementById('labelPooNotes').textContent = t('notesOptional');
+  document.getElementById('labelNoteTime').textContent = t('time');
+  document.getElementById('labelNoteDate').textContent = t('date');
+  document.getElementById('labelNote').textContent = t('noteLabel');
+
+  // Select options
+  document.getElementById('optFormula').textContent = t('formula');
+  document.getElementById('optBreast').textContent = t('breastMilk');
+  document.getElementById('optMixed').textContent = t('mixed');
+  document.getElementById('optPeeYes').textContent = t('yes');
+  document.getElementById('optPeeNo').textContent = t('no');
+
+  // Placeholders
+  document.getElementById('feedVolume').placeholder = t('phVolume');
+  document.getElementById('pooNotes').placeholder = t('phPooNotes');
+  document.getElementById('noteText').placeholder = t('phNote');
+
+  // Trends title
+  document.getElementById('trendsTitle').innerHTML = '&#x1F4C8; ' + t('trends14Days');
+
+  // Re-render time since last (for "ago"/"just now" strings)
+  renderTimeSinceLast();
+}
+
+function updateSleepBannerText() {
+  const raw = localStorage.getItem('niko_sleep_active');
+  if (raw) {
+    const data = JSON.parse(raw);
+    const banner = document.getElementById('sleepBanner');
+    banner.innerHTML = '&#x1F4A4; ' + t('sleepingSince') + ' <span id="sleepSinceTime">' + formatTime12(data.time) + '</span> ' + t('tapToLogWakeUp');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // SLEEP BANNER
 // ═══════════════════════════════════════════════════════
 function checkSleepActive() {
@@ -1138,7 +1526,7 @@ function checkSleepActive() {
   const banner = document.getElementById('sleepBanner');
   if (raw) {
     const data = JSON.parse(raw);
-    document.getElementById('sleepSinceTime').textContent = formatTime12(data.time);
+    banner.innerHTML = '&#x1F4A4; ' + t('sleepingSince') + ' <span id="sleepSinceTime">' + formatTime12(data.time) + '</span> ' + t('tapToLogWakeUp');
     banner.classList.add('active');
   } else {
     banner.classList.remove('active');
@@ -1169,8 +1557,9 @@ async function openSleepWake() {
 // ═══════════════════════════════════════════════════════
 function openModal(type) {
   const overlay = document.getElementById('modalOverlay');
-  const titles = { sleep: '&#x1F4A4; Log Sleep', feed: '&#x1F37C; Log Feeding', poo: '&#x1F4A9; Log Poo', note: '&#x1F4DD; Add Note' };
-  document.getElementById('modalTitle').innerHTML = titles[type];
+  const icons = { sleep: '&#x1F4A4; ', feed: '&#x1F37C; ', poo: '&#x1F4A9; ', note: '&#x1F4DD; ' };
+  const titleKeys = { sleep: 'logSleep', feed: 'logFeeding', poo: 'logPoo', note: 'addNote' };
+  document.getElementById('modalTitle').innerHTML = icons[type] + t(titleKeys[type]);
   document.getElementById('entryType').value = type;
 
   // Clear edit state
@@ -1200,28 +1589,28 @@ function openModal(type) {
       document.getElementById('sleepStart').value = data.time;
       document.getElementById('sleepDate').value = data.date;
       document.getElementById('sleepEnd').value = now;
-      btn.textContent = 'Log Wake Up';
+      btn.textContent = t('logWakeUp');
     } else {
-      btn.textContent = 'Start Sleep';
+      btn.textContent = t('startSleep');
     }
   } else if (type === 'feed') {
     document.getElementById('feedFields').style.display = 'block';
     document.getElementById('feedTime').value = now;
     document.getElementById('feedVolume').value = '';
     document.getElementById('feedDate').value = today;
-    btn.textContent = 'Save Feeding';
+    btn.textContent = t('saveFeeding');
   } else if (type === 'poo') {
     document.getElementById('pooFields').style.display = 'block';
     document.getElementById('pooTime').value = now;
     document.getElementById('pooDate').value = today;
     document.getElementById('pooNotes').value = '';
-    btn.textContent = 'Save Poo';
+    btn.textContent = t('savePoo');
   } else {
     document.getElementById('noteFields').style.display = 'block';
     document.getElementById('noteTime').value = now;
     document.getElementById('noteDate').value = today;
     document.getElementById('noteText').value = '';
-    btn.textContent = 'Save Note';
+    btn.textContent = t('saveNote');
   }
 
   overlay.classList.add('active');
@@ -1233,8 +1622,9 @@ function editEntry(id) {
 
   const type = entry.type;
   const overlay = document.getElementById('modalOverlay');
-  const editTitles = { sleep: '&#x1F4A4; Edit Sleep', feed: '&#x1F37C; Edit Feeding', poo: '&#x1F4A9; Edit Poo', note: '&#x1F4DD; Edit Note' };
-  document.getElementById('modalTitle').innerHTML = editTitles[type];
+  const icons = { sleep: '&#x1F4A4; ', feed: '&#x1F37C; ', poo: '&#x1F4A9; ', note: '&#x1F4DD; ' };
+  const editKeys = { sleep: 'editSleep', feed: 'editFeeding', poo: 'editPoo', note: 'editNote' };
+  document.getElementById('modalTitle').innerHTML = icons[type] + t(editKeys[type]);
   document.getElementById('entryType').value = type;
 
   // Set edit state
@@ -1255,27 +1645,27 @@ function editEntry(id) {
     document.getElementById('sleepStart').value = entry.sleepStart || '';
     document.getElementById('sleepEnd').value = entry.sleepEnd || '';
     document.getElementById('sleepDate').value = entry.date || '';
-    btn.textContent = 'Update Sleep';
+    btn.textContent = t('updateSleep');
   } else if (type === 'feed') {
     document.getElementById('feedFields').style.display = 'block';
     document.getElementById('feedTime').value = entry.time || '';
     document.getElementById('feedVolume').value = entry.volume || '';
     document.getElementById('feedType').value = entry.feedType || 'formula';
     document.getElementById('feedDate').value = entry.date || '';
-    btn.textContent = 'Update Feeding';
+    btn.textContent = t('updateFeeding');
   } else if (type === 'poo') {
     document.getElementById('pooFields').style.display = 'block';
     document.getElementById('pooTime').value = entry.time || '';
     document.getElementById('pooPee').value = entry.pee || 'yes';
     document.getElementById('pooDate').value = entry.date || '';
     document.getElementById('pooNotes').value = entry.notes || '';
-    btn.textContent = 'Update Poo';
+    btn.textContent = t('updatePoo');
   } else {
     document.getElementById('noteFields').style.display = 'block';
     document.getElementById('noteTime').value = entry.time || '';
     document.getElementById('noteDate').value = entry.date || '';
     document.getElementById('noteText').value = entry.text || '';
-    btn.textContent = 'Update Note';
+    btn.textContent = t('updateNote');
   }
 
   overlay.classList.add('active');
@@ -1376,10 +1766,10 @@ function renderEntries() {
   const el = document.getElementById('timeline');
   const sectionTitle = document.querySelector('.section-title');
   const today = todayStr();
-  sectionTitle.textContent = dateStr === today ? "Today's Log" : formatDateShort(dateStr);
+  sectionTitle.textContent = dateStr === today ? t('todaysLog') : formatDateShort(dateStr);
 
   if (entries.length === 0) {
-    el.innerHTML = '<div class="empty-state">No entries yet for this day.<br>Tap a button above to log!</div>';
+    el.innerHTML = '<div class="empty-state">' + t('emptyState') + '</div>';
     return;
   }
 
@@ -1389,28 +1779,28 @@ function renderEntries() {
       icon = '&#x1F4A4;'; iconClass = 'sleep';
       timeStr = formatTime12(e.sleepStart);
       if (e.sleepEnd) {
-        title = 'Sleep';
+        title = t('sleepTitle');
         const mins = calcSleepMins(e);
         const hrs = Math.floor(mins / 60);
         const m = mins % 60;
         sub = formatTime12(e.sleepStart) + ' &#8594; ' + formatTime12(e.sleepEnd) + ' (' + (hrs > 0 ? hrs + 'h ' : '') + m + 'm)';
       } else {
-        title = 'Fell Asleep'; sub = 'Still sleeping...';
+        title = t('fellAsleepTitle'); sub = t('stillSleeping');
       }
     } else if (e.type === 'feed') {
       icon = '&#x1F37C;'; iconClass = 'feed';
       timeStr = formatTime12(e.time);
-      title = e.feedType === 'formula' ? 'Formula' : e.feedType === 'mixed' ? 'Mixed Feed' : 'Breast Milk';
-      sub = e.volume ? e.volume + ' ml' : 'Volume not recorded';
+      title = e.feedType === 'formula' ? t('formulaTitle') : e.feedType === 'mixed' ? t('mixedFeedTitle') : t('breastMilkTitle');
+      sub = e.volume ? e.volume + ' ml' : t('volumeNotRecorded');
     } else if (e.type === 'poo') {
       icon = '&#x1F4A9;'; iconClass = 'poo';
       timeStr = formatTime12(e.time);
-      title = 'Poo' + (e.pee === 'yes' ? ' + Pee' : '');
+      title = e.pee === 'yes' ? t('pooPeeTitle') : t('pooTitle');
       sub = e.notes || '';
     } else {
       icon = '&#x1F4DD;'; iconClass = 'note';
       timeStr = formatTime12(e.time);
-      title = 'Note';
+      title = t('noteTitle');
       sub = e.text || '';
     }
     return '<div class="entry-card" onclick="editEntry(\'' + e.id + '\')">' +
@@ -1426,7 +1816,7 @@ function renderEntries() {
 }
 
 function confirmDelete(id) {
-  if (confirm('Delete this entry?')) deleteEntry(id);
+  if (confirm(t('deleteConfirm'))) deleteEntry(id);
 }
 
 function calcSleepMins(e) {
@@ -1455,12 +1845,18 @@ function getEntryTimestamp(e) {
 function formatTimeSince(diffMs) {
   if (diffMs < 0) return '--';
   const totalMins = Math.floor(diffMs / 60000);
-  if (totalMins < 1) return 'just now';
+  if (totalMins < 1) return t('justNow');
   const hrs = Math.floor(totalMins / 60);
   const mins = totalMins % 60;
-  if (hrs === 0) return mins + 'm ago';
-  if (mins === 0) return hrs + 'h ago';
-  return hrs + 'h ' + mins + 'm ago';
+  const agoStr = t('ago');
+  if (currentLang === 'ja') {
+    if (hrs === 0) return mins + '分' + agoStr;
+    if (mins === 0) return hrs + '時間' + agoStr;
+    return hrs + '時間' + mins + '分' + agoStr;
+  }
+  if (hrs === 0) return mins + 'm ' + agoStr;
+  if (mins === 0) return hrs + 'h ' + agoStr;
+  return hrs + 'h ' + mins + 'm ' + agoStr;
 }
 
 function renderTimeSinceLast() {
@@ -1496,7 +1892,7 @@ function renderTimeSinceLast() {
     const sleepStartTs = new Date(data.date + 'T' + data.time + ':00');
     if (!lastSleepTime || sleepStartTs > lastSleepTime) {
       lastSleepTime = sleepStartTs;
-      lastSleepAt = 'sleeping now';
+      lastSleepAt = t('sleepingNow');
     }
   }
 
@@ -1515,9 +1911,9 @@ function renderTimeSinceLast() {
   document.getElementById('tslFeed').textContent = lastFeedTime ? formatTimeSince(now - lastFeedTime) : '--';
   document.getElementById('tslFeedSub').textContent = lastFeedAt || '';
 
-  if (sleepActive && lastSleepAt === 'sleeping now') {
-    document.getElementById('tslSleep').textContent = 'Now';
-    document.getElementById('tslSleepSub').textContent = 'sleeping now';
+  if (sleepActive && lastSleepAt === t('sleepingNow')) {
+    document.getElementById('tslSleep').textContent = t('now');
+    document.getElementById('tslSleepSub').textContent = t('sleepingNow');
   } else {
     document.getElementById('tslSleep').textContent = lastSleepTime ? formatTimeSince(now - lastSleepTime) : '--';
     document.getElementById('tslSleepSub').textContent = lastSleepAt || '';
@@ -1556,7 +1952,7 @@ function switchSummaryTab(tab) {
   const dateStr = document.getElementById('viewDate').value;
 
   if (tab === '24h') {
-    document.getElementById('summaryTitle').textContent = 'Last 24 Hours';
+    document.getElementById('summaryTitle').textContent = t('last24Hours');
     const now = new Date();
     const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -1595,29 +1991,29 @@ function switchSummaryTab(tab) {
 
     let html = renderDayStats(stats);
     html += '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F4A4; Longest Sleep Stretch</span>' +
+      '<span class="stat-label">&#x1F4A4; ' + t('longestSleepStretch') + '</span>' +
       '<span class="stat-value sleep-color">' + formatMins(longestSleepMins) + '</span>' +
     '</div>';
     html += '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F37C; Since Last Feed</span>' +
+      '<span class="stat-label">&#x1F37C; ' + t('sinceLastFeed') + '</span>' +
       '<span class="stat-value feed-color">' + lastFeedAgo + '</span>' +
     '</div>';
     html += '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F4A9; Since Last Poo</span>' +
+      '<span class="stat-label">&#x1F4A9; ' + t('sinceLastPoo') + '</span>' +
       '<span class="stat-value poo-color">' + lastPooAgo + '</span>' +
     '</div>';
     body.innerHTML = html;
 
   } else if (tab === 'daily') {
-    document.getElementById('summaryTitle').textContent = 'Daily Summary \u2014 ' + formatDateShort(dateStr);
+    document.getElementById('summaryTitle').textContent = t('dailySummary') + ' \u2014 ' + formatDateShort(dateStr);
     const dayEntries = entries.filter(e => e.date === dateStr);
     const stats = calcDayStats(dayEntries);
     body.innerHTML = renderDayStats(stats);
   } else {
     const weekStart = getWeekStart(dateStr);
-    document.getElementById('summaryTitle').textContent = 'Weekly Summary';
+    document.getElementById('summaryTitle').textContent = t('weeklySummary');
     let html = '<div class="summary-day-list">';
-    html += '<div class="summary-day-row header"><span>Day</span><span>Sleep</span><span>Feed</span><span>Poo</span></div>';
+    html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('sleepCol') + '</span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
     let totals = { sleepMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
     for (let i = 0; i < 7; i++) {
       const d = addDays(weekStart, i);
@@ -1627,7 +2023,8 @@ function switchSummaryTab(tab) {
       totals.feedMl += stats.feedMl;
       totals.feedCount += stats.feedCount;
       totals.pooCount += stats.pooCount;
-      const dayName = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+      const dayName = new Date(d + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'numeric', day: 'numeric' });
       const isToday = d === todayStr();
       html += '<div class="summary-day-row"' + (isToday ? ' style="font-weight:600"' : '') + '>' +
         '<span>' + dayName + '</span>' +
@@ -1637,13 +2034,13 @@ function switchSummaryTab(tab) {
       '</div>';
     }
     html += '<div class="summary-day-row" style="font-weight:700;border-top:2px solid var(--text)">' +
-      '<span>Total</span>' +
+      '<span>' + t('total') + '</span>' +
       '<span>' + formatMins(totals.sleepMins) + '</span>' +
       '<span>' + (totals.feedMl > 0 ? totals.feedMl + ' ml' : '-') + '</span>' +
       '<span>' + totals.pooCount + '</span>' +
     '</div>';
     html += '<div class="summary-day-row" style="color:var(--text-light)">' +
-      '<span>Avg/day</span>' +
+      '<span>' + t('avgPerDay') + '</span>' +
       '<span>' + formatMins(Math.round(totals.sleepMins / 7)) + '</span>' +
       '<span>' + (totals.feedMl > 0 ? Math.round(totals.feedMl / 7) + ' ml' : '-') + '</span>' +
       '<span>' + (totals.pooCount / 7).toFixed(1) + '</span>' +
@@ -1672,19 +2069,19 @@ function formatMins(m) {
 
 function renderDayStats(stats) {
   return '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F4A4; Total Sleep</span>' +
+      '<span class="stat-label">&#x1F4A4; ' + t('totalSleep') + '</span>' +
       '<span class="stat-value sleep-color">' + formatMins(stats.sleepMins) + '</span>' +
     '</div>' +
     '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F37C; Total Feed Volume</span>' +
+      '<span class="stat-label">&#x1F37C; ' + t('totalFeedVolume') + '</span>' +
       '<span class="stat-value feed-color">' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
     '</div>' +
     '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F37C; Number of Feedings</span>' +
+      '<span class="stat-label">&#x1F37C; ' + t('numberOfFeedings') + '</span>' +
       '<span class="stat-value feed-color">' + stats.feedCount + '</span>' +
     '</div>' +
     '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F4A9; Poo Count</span>' +
+      '<span class="stat-label">&#x1F4A9; ' + t('pooCount') + '</span>' +
       '<span class="stat-value poo-color">' + stats.pooCount + '</span>' +
     '</div>';
 }
@@ -1710,7 +2107,8 @@ function renderTrends() {
     const dayEntries = entries.filter(e => e.date === d);
     const stats = calcDayStats(dayEntries);
     const dt = new Date(d + 'T00:00:00');
-    const dayLabel = dt.toLocaleDateString('en-US', { weekday: 'narrow' });
+    const trendLocale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+    const dayLabel = dt.toLocaleDateString(trendLocale, { weekday: 'narrow' });
     const dayNum = dt.getDate();
     days.push({
       date: d,
@@ -1729,7 +2127,7 @@ function renderTrends() {
 
   // Sleep chart
   html += '<div class="chart-section">';
-  html += '<div class="chart-title">&#x1F4A4; Daily Sleep (hours)</div>';
+  html += '<div class="chart-title">&#x1F4A4; ' + t('dailySleepHours') + '</div>';
   html += '<div class="chart-container">';
   html += '<div class="chart-y-label">' + maxSleep.toFixed(1) + 'h</div>';
   html += '<div class="chart-area">';
@@ -1751,7 +2149,7 @@ function renderTrends() {
 
   // Feed chart
   html += '<div class="chart-section">';
-  html += '<div class="chart-title">&#x1F37C; Daily Feed Volume (ml)</div>';
+  html += '<div class="chart-title">&#x1F37C; ' + t('dailyFeedVolumeMl') + '</div>';
   html += '<div class="chart-container">';
   html += '<div class="chart-y-label">' + maxFeed + ' ml</div>';
   html += '<div class="chart-area">';
@@ -1840,39 +2238,39 @@ function renderTrendStats(entries, today) {
 
   // Longest sleep
   html += '<div class="trend-stat-card">' +
-    '<div class="ts-label">&#x1F4A4; Longest Sleep</div>' +
+    '<div class="ts-label">&#x1F4A4; ' + t('longestSleep') + '</div>' +
     '<div class="ts-value">' + formatMins(longestSleepMins) + '</div>' +
-    '<div class="ts-sub">past 7 days</div>' +
+    '<div class="ts-sub">' + t('past7Days') + '</div>' +
   '</div>';
 
   // Avg feed gap
   html += '<div class="trend-stat-card">' +
-    '<div class="ts-label">&#x1F37C; Avg Feed Gap</div>' +
+    '<div class="ts-label">&#x1F37C; ' + t('avgFeedGap') + '</div>' +
     '<div class="ts-value">' + (avgFeedGapMins > 0 ? formatMins(avgFeedGapMins) : '--') + '</div>' +
-    '<div class="ts-sub">between feedings</div>' +
+    '<div class="ts-sub">' + t('betweenFeedings') + '</div>' +
   '</div>';
 
   // Poo frequency
   html += '<div class="trend-stat-card">' +
-    '<div class="ts-label">&#x1F4A9; Poo Frequency</div>' +
-    '<div class="ts-value">' + avgPooPerDay + '/day</div>' +
-    '<div class="ts-sub">past 7 days</div>' +
+    '<div class="ts-label">&#x1F4A9; ' + t('pooFrequency') + '</div>' +
+    '<div class="ts-value">' + avgPooPerDay + t('perDay') + '</div>' +
+    '<div class="ts-sub">' + t('past7Days') + '</div>' +
   '</div>';
 
   // Day vs night sleep (takes full width)
   html += '<div class="trend-stat-card">' +
-    '<div class="ts-label">&#x1F319; Day vs Night Sleep</div>' +
+    '<div class="ts-label">&#x1F319; ' + t('dayVsNightSleep') + '</div>' +
     '<div class="day-night-bar-wrap">' +
       '<div class="day-night-bar">' +
         '<div class="day-portion" style="width:' + dayPct + '%"></div>' +
         '<div class="night-portion" style="width:' + nightPct + '%"></div>' +
       '</div>' +
       '<div class="day-night-labels">' +
-        '<span>Day ' + dayPct + '%</span>' +
-        '<span>Night ' + nightPct + '%</span>' +
+        '<span>' + t('dayLabel') + ' ' + dayPct + '%</span>' +
+        '<span>' + t('nightLabel') + ' ' + nightPct + '%</span>' +
       '</div>' +
     '</div>' +
-    '<div class="ts-sub">7am\u20137pm vs 7pm\u20137am</div>' +
+    '<div class="ts-sub">' + t('dayNightRange') + '</div>' +
   '</div>';
 
   html += '</div>';
@@ -1884,7 +2282,7 @@ function renderTrendStats(entries, today) {
 // ═══════════════════════════════════════════════════════
 function exportData() {
   const entries = loadEntries();
-  if (entries.length === 0) { alert('No data to export.'); return; }
+  if (entries.length === 0) { alert(t('noDataExport')); return; }
   const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','notes','text','createdAt'];
   let csv = headers.join(',') + '\n';
   entries.forEach(e => {
@@ -1928,7 +2326,8 @@ function startTimeSinceRefresh() {
 // INIT
 // ═══════════════════════════════════════════════════════
 document.getElementById('viewDate').value = todayStr();
-document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+// Apply saved language on load
+setLang(currentLang);
 syncFromCloud();
 startAutoRefresh();
 startTimeSinceRefresh();
