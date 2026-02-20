@@ -402,7 +402,7 @@ body {
   border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
-.summary-day-row.header { font-weight: 700; color: var(--text-light); text-transform: uppercase; font-size: 11px; }
+.summary-day-row.header { font-weight: 700; color: var(--text); text-transform: uppercase; font-size: 11px; background: var(--bg); border-radius: 6px; padding: 8px 4px; }
 
 /* Trends Modal / Overlay */
 .trends-overlay {
@@ -573,14 +573,14 @@ body {
   border: none;
   background: var(--bg);
   border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
+  padding: 12px 24px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 .nav-btn:active { background: var(--border); }
 
@@ -777,13 +777,7 @@ body {
 <!-- Bottom nav -->
 <div class="bottom-nav">
   <button class="nav-btn" onclick="openSummary('24h')">
-    &#x23F0; <span id="navLabel24h">24h</span>
-  </button>
-  <button class="nav-btn" onclick="openSummary('daily')">
-    &#x1F4CA; <span id="navLabelDaily">Daily</span>
-  </button>
-  <button class="nav-btn" onclick="openSummary('weekly')">
-    &#x1F4C5; <span id="navLabelWeekly">Weekly</span>
+    &#x1F4CA; <span id="navLabelSummaries">Summaries</span>
   </button>
   <button class="nav-btn" onclick="openTrends()">
     &#x1F4C8; <span id="navLabelTrends">Trends</span>
@@ -1121,37 +1115,114 @@ function showToast(msg) {
 
 let funToastTimer;
 const funToasts = {
-  feed: [
-    '\u3054\u3061\u305D\u3046\u3055\u307E\u3067\u3057\u305F\uFF01',
-    '\u304A\u306A\u304B\u3044\u3063\u3071\u3044\uFF01',
-    '\u3082\u3050\u3082\u3050\u30BF\u30A4\u30E0\u7D42\u4E86\uFF01',
-    '\u30DF\u30EB\u30AF\u6700\u9AD8\uFF01',
-    '\u3088\u304F\u98F2\u307F\u307E\u3057\u305F\uFF01'
-  ],
-  poo: [
-    '\u304A\u75B2\u308C\u3055\u307E\u3067\u3057\u305F\uFF01',
-    '\u3046\u3093\u3061\u5927\u6210\u529F\uFF01',
-    '\u30B9\u30C3\u30AD\u30EA\u3057\u305F\u306D\uFF01',
-    '\u304A\u306A\u304B\u8EFD\u304F\u306A\u3063\u305F\u306D\uFF01',
-    '\u4ECA\u65E5\u3082\u3088\u304F\u51FA\u307E\u3057\u305F\uFF01'
-  ],
-  sleepStart: [
-    '\u304A\u3084\u3059\u307F\u306A\u3055\u3044\uFF01',
-    '\u3044\u3044\u5922\u898B\u3066\u306D\uFF01',
-    '\u3059\u3084\u3059\u3084\u30BF\u30A4\u30E0\uFF01',
-    '\u304A\u3084\u3059\u307F\u3001\u30CB\u30B3\u3061\u3083\u3093\uFF01',
-    '\u5922\u306E\u4E16\u754C\u3078\u51FA\u767A\uFF01'
-  ],
-  sleepEnd: [
-    '\u304A\u306F\u3088\u3046\u3054\u3056\u3044\u307E\u3059\uFF01',
-    '\u304A\u306F\u3088\u3046\u3001\u30CB\u30B3\u3061\u3083\u3093\uFF01',
-    '\u3088\u304F\u5BDD\u305F\u306D\uFF01',
-    '\u5143\u6C17\u306B\u8D77\u304D\u305F\uFF01',
-    '\u4E16\u754C\u304C\u5F85\u3063\u3066\u308B\u3088\uFF01'
-  ]
+  feed: {
+    ja: [
+      'ごちそうさまでした！',
+      'おなかいっぱい！',
+      'もぐもぐタイム終了！',
+      'ミルク最高！',
+      'よく飲みました！',
+      'おなか満足！',
+      'ミルクチャンピオン！',
+      'ぐびぐび上手！',
+      '完食おめでとう！',
+      'ミルクの達人！'
+    ],
+    en: [
+      'Bon appetit, baby!',
+      'Tummy is full!',
+      'Nom nom time complete!',
+      'Milk was amazing!',
+      'Great drinking!',
+      'Happy tummy!',
+      'Milk champion!',
+      'Gulp gulp superstar!',
+      'All done, well fed!',
+      'Little milk master!'
+    ]
+  },
+  poo: {
+    ja: [
+      'お疲れさまでした！',
+      'うんち大成功！',
+      'スッキリしたね！',
+      'おなか軽くなったね！',
+      '今日もよく出ました！',
+      'うんちマスター！',
+      'ナイスうんち！',
+      'おなかスッキリ大作戦！',
+      'うんちミッション完了！',
+      '快腸快調！'
+    ],
+    en: [
+      'Great job, baby!',
+      'Poo success!',
+      'Feeling lighter!',
+      'Tummy feels better!',
+      'Another good one today!',
+      'Poo master!',
+      'Nice work down there!',
+      'Mission accomplished!',
+      'Poo mission complete!',
+      'Happy belly!'
+    ]
+  },
+  sleepStart: {
+    ja: [
+      'おやすみなさい！',
+      'いい夢見てね！',
+      'すやすやタイム！',
+      'おやすみ、ニコちゃん！',
+      '夢の世界へ出発！',
+      'ねんねの時間だよ！',
+      'お星さまが待ってるよ！',
+      'ふわふわの夢へ！',
+      'ぐっすりおやすみ！',
+      '夢の冒険へ出発！'
+    ],
+    en: [
+      'Goodnight!',
+      'Sweet dreams!',
+      'Sleepy time!',
+      'Nighty night, Niko!',
+      'Off to dreamland!',
+      'Time for sleepies!',
+      'The stars are waiting!',
+      'Off to fluffy dreams!',
+      'Sleep tight!',
+      'Dream adventure begins!'
+    ]
+  },
+  sleepEnd: {
+    ja: [
+      'おはようございます！',
+      'おはよう、ニコちゃん！',
+      'よく寝たね！',
+      '元気に起きた！',
+      '世界が待ってるよ！',
+      'ぐっすり寝れたね！',
+      'おめめパッチリ！',
+      'エネルギー満タン！',
+      'すっきりお目覚め！',
+      '朝だよ、冒険の始まり！'
+    ],
+    en: [
+      'Good morning!',
+      'Morning, Niko!',
+      'Great sleep!',
+      'Wide awake!',
+      'The world awaits!',
+      'Slept like a champ!',
+      'Bright eyes!',
+      'Fully recharged!',
+      'Fresh and awake!',
+      'New day, new adventures!'
+    ]
+  }
 };
 function randomFunToast(category) {
-  const msgs = funToasts[category];
+  const lang = currentLang || 'en';
+  const msgs = funToasts[category][lang] || funToasts[category].en;
   return msgs[Math.floor(Math.random() * msgs.length)];
 }
 function showFunToast(icon, msg) {
@@ -1292,9 +1363,7 @@ const i18n = {
     exportCsv: 'Export CSV',
     noDataExport: 'No data to export.',
     // Nav buttons
-    nav24h: '24h',
-    navDaily: 'Daily',
-    navWeekly: 'Weekly',
+    navSummaries: 'Summaries',
     navTrends: 'Trends',
     // Placeholders
     phVolume: 'e.g. 90',
@@ -1408,9 +1477,7 @@ const i18n = {
     now: '今',
     exportCsv: 'CSVエクスポート',
     noDataExport: 'データがありません。',
-    nav24h: '24時間',
-    navDaily: '日次',
-    navWeekly: '週次',
+    navSummaries: 'サマリー',
     navTrends: 'トレンド',
     phVolume: '例: 90',
     phPooNotes: '色、固さなど...',
@@ -1466,9 +1533,7 @@ function applyLang() {
   document.getElementById('tabWeeklyLabel').textContent = t('tabWeekly');
 
   // Nav buttons
-  document.getElementById('navLabel24h').textContent = t('nav24h');
-  document.getElementById('navLabelDaily').textContent = t('navDaily');
-  document.getElementById('navLabelWeekly').textContent = t('navWeekly');
+  document.getElementById('navLabelSummaries').textContent = t('navSummaries');
   document.getElementById('navLabelTrends').textContent = t('navTrends');
 
   // Export button
@@ -2026,7 +2091,7 @@ function switchSummaryTab(tab) {
       const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
       const dayName = new Date(d + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'numeric', day: 'numeric' });
       const isToday = d === todayStr();
-      html += '<div class="summary-day-row"' + (isToday ? ' style="font-weight:600"' : '') + '>' +
+      html += '<div class="summary-day-row"' + (isToday ? ' style="font-weight:600;background:var(--bg);border-radius:6px;padding:8px 4px"' : '') + '>' +
         '<span>' + dayName + '</span>' +
         '<span>' + formatMins(stats.sleepMins) + '</span>' +
         '<span>' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
