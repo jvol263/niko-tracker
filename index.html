@@ -628,8 +628,24 @@ body {
   font-weight: 600;
   cursor: pointer;
   animation: pulse 2s infinite;
+  position: relative;
 }
-.sleep-active-banner.active { display: block; }
+.sleep-active-banner.active { display: flex; align-items: center; justify-content: center; }
+.sleep-banner-text { flex: 1; }
+.sleep-abort-btn {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+.sleep-abort-btn:active { background: rgba(255,255,255,0.4); }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.8; }
@@ -1006,8 +1022,9 @@ body {
 </div>
 <div class="sync-bar" id="syncBar"></div>
 
-<div class="sleep-active-banner" id="sleepBanner" onclick="openSleepWake()">
-  &#x1F4A4; Sleeping since <span id="sleepSinceTime"></span> — tap to log wake up
+<div class="sleep-active-banner" id="sleepBanner">
+  <span class="sleep-banner-text" onclick="openSleepWake()">&#x1F4A4; Sleeping since <span id="sleepSinceTime"></span> — tap to log wake up</span>
+  <button class="sleep-abort-btn" onclick="abortSleep()" id="sleepAbortBtn">&#x2716; Cancel</button>
 </div>
 
 <div class="feed-reminder-banner" id="feedReminderBanner" onclick="openModal('feed')">
@@ -1651,6 +1668,32 @@ const funToasts = {
       'Fresh and awake!',
       'New day, new adventures!'
     ]
+  },
+  sleepAbort: {
+    ja: [
+      'うそでしょ！？',
+      '{name}ちゃん、やっぱ起きてた！',
+      'ねんね撤回！',
+      'まだ遊びたいの！？',
+      'おやすみ…じゃなかった！',
+      'だまされた！',
+      '{name}ちゃんの作戦勝ち！',
+      'ねんねフェイク！',
+      'まだまだ元気！',
+      '{name}ちゃん復活！'
+    ],
+    en: [
+      'Psych!',
+      '{name} was just kidding!',
+      'Never mind!',
+      'False alarm!',
+      'Just messing with you!',
+      'Sike! Still awake!',
+      '{name} says NOT YET!',
+      'Sleep? What sleep?',
+      'Plot twist: still up!',
+      '{name} fooled everyone!'
+    ]
   }
 };
 function randomFunToast(category) {
@@ -1727,6 +1770,7 @@ const i18n = {
     // Sleep banner
     sleepingSince: 'Sleeping since',
     tapToLogWakeUp: '— tap to log wake up',
+    cancelSleep: 'Cancel',
     // Sync
     synced: 'Synced',
     syncing: 'Syncing...',
@@ -1918,6 +1962,7 @@ const i18n = {
     updateNote: 'メモ更新',
     sleepingSince: 'ねんね中',
     tapToLogWakeUp: '— タップで起床記録',
+    cancelSleep: 'キャンセル',
     synced: '同期済み',
     syncing: '同期中...',
     syncedJustNow: '同期完了',
@@ -2182,9 +2227,16 @@ function updateSleepBannerText() {
   const raw = localStorage.getItem('niko_sleep_active');
   if (raw) {
     const data = JSON.parse(raw);
-    const banner = document.getElementById('sleepBanner');
-    banner.innerHTML = '&#x1F4A4; ' + t('sleepingSince') + ' <span id="sleepSinceTime">' + formatTime12(data.time) + '</span> ' + t('tapToLogWakeUp');
+    buildSleepBanner(data);
   }
+}
+
+function buildSleepBanner(data) {
+  const banner = document.getElementById('sleepBanner');
+  banner.innerHTML = '<span class="sleep-banner-text" onclick="openSleepWake()">&#x1F4A4; ' +
+    t('sleepingSince') + ' <span id="sleepSinceTime">' + formatTime12(data.time) + '</span> ' +
+    t('tapToLogWakeUp') + '</span>' +
+    '<button class="sleep-abort-btn" onclick="abortSleep()" id="sleepAbortBtn">&#x2716; ' + t('cancelSleep') + '</button>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2195,7 +2247,7 @@ function checkSleepActive() {
   const banner = document.getElementById('sleepBanner');
   if (raw) {
     const data = JSON.parse(raw);
-    banner.innerHTML = '&#x1F4A4; ' + t('sleepingSince') + ' <span id="sleepSinceTime">' + formatTime12(data.time) + '</span> ' + t('tapToLogWakeUp');
+    buildSleepBanner(data);
     banner.classList.add('active');
   } else {
     banner.classList.remove('active');
@@ -2219,6 +2271,14 @@ async function openSleepWake() {
   checkSleepActive();
   renderEntries();
   renderTimeSinceLast();
+}
+
+async function abortSleep() {
+  const raw = localStorage.getItem('niko_sleep_active');
+  if (!raw) return;
+  await saveSleepActive(null);
+  showFunToast('\uD83D\uDE1C', randomFunToast('sleepAbort'));
+  checkSleepActive();
 }
 
 // ═══════════════════════════════════════════════════════
