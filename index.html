@@ -656,6 +656,94 @@ body {
 }
 .data-btn:active { background: var(--bg); }
 
+/* Settings Accordion */
+.settings-section {
+  max-width: 500px;
+  margin: 12px auto 0;
+  padding: 0 16px;
+}
+.settings-toggle {
+  width: 100%;
+  background: var(--card);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+}
+.settings-toggle:active { background: var(--bg); }
+.settings-toggle .settings-arrow {
+  transition: transform 0.25s;
+  font-size: 12px;
+  color: var(--text-light);
+}
+.settings-toggle.open .settings-arrow { transform: rotate(180deg); }
+.settings-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.settings-body.open {
+  max-height: 800px;
+}
+.settings-inner {
+  background: var(--card);
+  border-radius: 0 0 12px 12px;
+  padding: 0 16px 16px;
+  margin-top: -8px;
+}
+.setting-group {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-group:last-child { border-bottom: none; }
+.setting-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+.setting-row label { font-size: 13px; font-weight: 600; color: var(--text); }
+.setting-row select, .setting-row input[type="text"], .setting-row input[type="date"] {
+  padding: 6px 10px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+}
+.setting-row input[type="text"] { width: 120px; text-align: right; }
+.setting-row input[type="date"] { width: 150px; }
+.settings-export-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+.settings-export-btn:active { background: var(--border); }
+
 /* Toast notification */
 .toast {
   position: fixed;
@@ -697,19 +785,7 @@ body {
 .fun-toast .fun-icon { font-size: 44px; display: block; margin-bottom: 8px; }
 .fun-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-/* Baby Profile */
-.profile-section {
-  max-width: 500px;
-  margin: 12px auto 0;
-  padding: 0 16px;
-}
-.profile-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: var(--shadow);
-}
-.profile-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+/* Profile field reusable styles */
 .profile-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -824,32 +900,19 @@ body {
 }
 .feed-reminder-banner.active { display: block; }
 
-/* Feed Reminder Settings */
-.reminder-setting {
-  max-width: 500px;
-  margin: 8px auto 0;
-  padding: 0 16px;
+/* Poo Reminder Banner */
+.poo-reminder-banner {
+  display: none;
+  background: var(--poo);
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: pulse 2s infinite;
 }
-.reminder-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--card);
-  border-radius: 10px;
-  padding: 10px 14px;
-  box-shadow: var(--shadow);
-}
-.reminder-row label { font-size: 13px; font-weight: 600; color: var(--text); }
-.reminder-row select {
-  padding: 6px 10px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--bg);
-  color: var(--text);
-  -webkit-appearance: none;
-}
+.poo-reminder-banner.active { display: block; }
 
 /* Doctor Report Overlay */
 .report-overlay {
@@ -951,6 +1014,10 @@ body {
   &#x1F37C; It's been <span id="feedReminderTime"></span> since last feed
 </div>
 
+<div class="poo-reminder-banner" id="pooReminderBanner" onclick="openModal('poo')">
+  &#x1F4A9; It's been <span id="pooReminderTime"></span> since last poo
+</div>
+
 <!-- Sync status -->
 <div class="sync-status" id="syncStatus" onclick="syncFromCloud()">
   <span class="dot ok" id="syncDot"></span> <span id="syncText">Synced</span>
@@ -1006,41 +1073,78 @@ body {
 <p class="section-title" style="margin-top:6px">Today's Log</p>
 <div class="timeline" id="timeline"></div>
 
-<!-- Baby Profile -->
-<div class="profile-section">
-  <div class="profile-card">
-    <h3 id="profileTitle">&#x1F476; Baby Profile</h3>
-    <div class="profile-fields">
-      <div class="profile-field">
-        <label id="labelBabyName">Name</label>
-        <input type="text" id="babyNameInput" placeholder="Baby name" onblur="saveProfile()" onchange="saveProfile()">
+<!-- Settings Accordion -->
+<div class="settings-section">
+  <button class="settings-toggle" id="settingsToggle" onclick="toggleSettings()">
+    <span>&#x2699;&#xFE0F; <span id="settingsLabel">Settings</span></span>
+    <span class="settings-arrow">&#x25BC;</span>
+  </button>
+  <div class="settings-body" id="settingsBody">
+    <div class="settings-inner">
+
+      <!-- Baby Profile -->
+      <div class="setting-group">
+        <div class="setting-group-title" id="settProfileTitle">&#x1F476; Baby Profile</div>
+        <div class="profile-fields">
+          <div class="profile-field">
+            <label id="labelBabyName">Name</label>
+            <input type="text" id="babyNameInput" placeholder="Baby name" onblur="saveProfile()" onchange="saveProfile()">
+          </div>
+          <div class="profile-field">
+            <label id="labelBirthday">Birthday</label>
+            <input type="date" id="babyBirthdateInput" onblur="saveProfile()" onchange="saveProfile()">
+          </div>
+        </div>
       </div>
-      <div class="profile-field">
-        <label id="labelBirthday">Birthday</label>
-        <input type="date" id="babyBirthdateInput" onblur="saveProfile()" onchange="saveProfile()">
+
+      <!-- Reminders -->
+      <div class="setting-group">
+        <div class="setting-group-title" id="settRemindersTitle">&#x1F514; Reminders</div>
+        <div class="setting-row">
+          <label id="reminderLabel">&#x1F37C; Feed Reminder</label>
+          <select id="feedReminderSelect" onchange="saveFeedReminder()">
+            <option value="off" id="optReminderOff">Off</option>
+            <option value="150">2.5h</option>
+            <option value="180">3h</option>
+            <option value="210">3.5h</option>
+            <option value="240">4h</option>
+            <option value="270">4.5h</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label id="pooReminderLabel">&#x1F4A9; Poo Reminder</label>
+          <select id="pooReminderSelect" onchange="savePooReminder()">
+            <option value="off" id="optPooReminderOff">Off</option>
+            <option value="720">12h</option>
+            <option value="1440">24h</option>
+            <option value="2160">36h</option>
+            <option value="2880">48h</option>
+            <option value="4320">72h</option>
+          </select>
+        </div>
       </div>
+
+      <!-- Defaults -->
+      <div class="setting-group">
+        <div class="setting-group-title" id="settDefaultsTitle">&#x1F527; Defaults</div>
+        <div class="setting-row">
+          <label id="defaultFeedTypeLabel">Default Feed Type</label>
+          <select id="defaultFeedTypeSelect" onchange="saveDefaultFeedType()">
+            <option value="formula" id="optDefFormula">Formula</option>
+            <option value="breast" id="optDefBreast">Breast Milk</option>
+            <option value="mixed" id="optDefMixed">Mixed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="setting-group">
+        <div class="setting-group-title" id="settDataTitle">&#x1F4BE; Data</div>
+        <button class="settings-export-btn" id="exportBtn" onclick="exportData()">&#x1F4E5; Export CSV</button>
+      </div>
+
     </div>
   </div>
-</div>
-
-<!-- Feed Reminder Setting -->
-<div class="reminder-setting">
-  <div class="reminder-row">
-    <label id="reminderLabel">&#x1F37C; Feed Reminder</label>
-    <select id="feedReminderSelect" onchange="saveFeedReminder()">
-      <option value="off" id="optReminderOff">Off</option>
-      <option value="150">2.5h</option>
-      <option value="180">3h</option>
-      <option value="210">3.5h</option>
-      <option value="240">4h</option>
-      <option value="270">4.5h</option>
-    </select>
-  </div>
-</div>
-
-<!-- Data management -->
-<div class="data-actions">
-  <button class="data-btn" id="exportBtn" onclick="exportData()">&#x1F4E5; Export CSV</button>
 </div>
 
 <!-- Bottom nav -->
@@ -1288,6 +1392,7 @@ async function syncFromCloud() {
     renderTimeSinceLast();
     checkSleepActive();
     checkFeedReminder();
+    checkPooReminder();
   } catch (err) {
     console.error('Sync failed:', err);
     setSyncStatus('error', t('syncFailed'));
@@ -1757,7 +1862,17 @@ const i18n = {
     feedGapAlert: 'Longest feeding gap:',
     lowFeedDays: 'days with fewer than 4 feeds',
     volumeChange: 'Feed volume changed',
-    overPeriod: 'over this period'
+    overPeriod: 'over this period',
+    // Settings
+    settings: 'Settings',
+    profileGroup: 'Baby Profile',
+    remindersGroup: 'Reminders',
+    defaultsGroup: 'Defaults',
+    dataGroup: 'Data',
+    pooReminder: 'Poo Reminder',
+    pooReminderOff: 'Off',
+    pooReminderBanner: "It's been {time} since last poo",
+    defaultFeedType: 'Default Feed Type'
   },
   ja: {
     appTitle: 'ニコトラッカー',
@@ -1927,7 +2042,17 @@ const i18n = {
     feedGapAlert: '最長ミルク間隔:',
     lowFeedDays: '日はミルク4回未満',
     volumeChange: 'ミルク量の変化',
-    overPeriod: 'この期間中'
+    overPeriod: 'この期間中',
+    // Settings
+    settings: '設定',
+    profileGroup: '赤ちゃんプロフィール',
+    remindersGroup: 'リマインダー',
+    defaultsGroup: 'デフォルト',
+    dataGroup: 'データ',
+    pooReminder: 'うんちリマインダー',
+    pooReminderOff: 'オフ',
+    pooReminderBanner: '最後のうんちから{time}経ちました',
+    defaultFeedType: 'デフォルトミルク種類'
   }
 };
 
@@ -1985,18 +2110,26 @@ function applyLang() {
   // Export button
   document.getElementById('exportBtn').innerHTML = '&#x1F4E5; ' + t('exportCsv');
 
-  // Baby profile labels
-  document.getElementById('profileTitle').innerHTML = '&#x1F476; ' + t('babyProfile');
+  // Settings section labels
+  document.getElementById('settingsLabel').textContent = t('settings');
+  document.getElementById('settProfileTitle').innerHTML = '&#x1F476; ' + t('profileGroup');
+  document.getElementById('settRemindersTitle').innerHTML = '&#x1F514; ' + t('remindersGroup');
+  document.getElementById('settDefaultsTitle').innerHTML = '&#x1F527; ' + t('defaultsGroup');
+  document.getElementById('settDataTitle').innerHTML = '&#x1F4BE; ' + t('dataGroup');
   document.getElementById('labelBabyName').textContent = t('babyName');
   document.getElementById('labelBirthday').textContent = t('birthday');
   document.getElementById('babyNameInput').placeholder = t('phBabyName');
+  document.getElementById('reminderLabel').innerHTML = '&#x1F37C; ' + t('feedReminder');
+  document.getElementById('optReminderOff').textContent = t('feedReminderOff');
+  document.getElementById('pooReminderLabel').innerHTML = '&#x1F4A9; ' + t('pooReminder');
+  document.getElementById('optPooReminderOff').textContent = t('pooReminderOff');
+  document.getElementById('defaultFeedTypeLabel').textContent = t('defaultFeedType');
+  document.getElementById('optDefFormula').textContent = t('formula');
+  document.getElementById('optDefBreast').textContent = t('breastMilk');
+  document.getElementById('optDefMixed').textContent = t('mixed');
 
   // Stool color label
   document.getElementById('labelPooColor').textContent = t('pooColor');
-
-  // Feed reminder
-  document.getElementById('reminderLabel').innerHTML = '&#x1F37C; ' + t('feedReminder');
-  document.getElementById('optReminderOff').textContent = t('feedReminderOff');
 
   // Report labels
   document.getElementById('reportTitle').innerHTML = '&#x1FA7A; ' + t('doctorReport');
@@ -2006,8 +2139,9 @@ function applyLang() {
   // Apply profile to UI (title, etc)
   applyProfileToUI();
 
-  // Update feed reminder banner text
+  // Update reminder banner texts
   checkFeedReminder();
+  checkPooReminder();
 
   // Form labels
   document.getElementById('labelFellAsleep').textContent = t('fellAsleep');
@@ -2132,6 +2266,7 @@ function openModal(type) {
     document.getElementById('feedFields').style.display = 'block';
     document.getElementById('feedTime').value = now;
     document.getElementById('feedVolume').value = '';
+    document.getElementById('feedType').value = localStorage.getItem('niko_default_feed_type') || 'formula';
     document.getElementById('feedDate').value = today;
     btn.textContent = t('saveFeeding');
   } else if (type === 'poo') {
@@ -2275,6 +2410,7 @@ async function saveEntry(e) {
     if (color === 'white') showMedicalAlert('alertWhiteStool');
     else if (color === 'red') showMedicalAlert('alertRedStool');
     else if (color === 'black') showMedicalAlert('alertBlackStool');
+    checkPooReminder();
   } else {
     const time = document.getElementById('noteTime').value;
     const date = document.getElementById('noteDate').value;
@@ -2822,6 +2958,16 @@ function renderTrendStats(entries, today) {
 }
 
 // ═══════════════════════════════════════════════════════
+// SETTINGS ACCORDION
+// ═══════════════════════════════════════════════════════
+function toggleSettings() {
+  const btn = document.getElementById('settingsToggle');
+  const body = document.getElementById('settingsBody');
+  btn.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════
 // BABY PROFILE
 // ═══════════════════════════════════════════════════════
 function loadProfile() {
@@ -2979,6 +3125,75 @@ function checkFeedReminder() {
   } else {
     banner.classList.remove('active');
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// POO REMINDER
+// ═══════════════════════════════════════════════════════
+function savePooReminder() {
+  const val = document.getElementById('pooReminderSelect').value;
+  localStorage.setItem('niko_poo_reminder', val);
+  checkPooReminder();
+}
+
+function loadPooReminder() {
+  const val = localStorage.getItem('niko_poo_reminder') || 'off';
+  document.getElementById('pooReminderSelect').value = val;
+}
+
+function checkPooReminder() {
+  const threshold = localStorage.getItem('niko_poo_reminder') || 'off';
+  const banner = document.getElementById('pooReminderBanner');
+  if (threshold === 'off') {
+    banner.classList.remove('active');
+    return;
+  }
+
+  const thresholdMs = parseInt(threshold) * 60 * 1000;
+  const entries = loadEntries();
+  const now = new Date();
+
+  // Find most recent poo
+  let lastPooTime = null;
+  entries.filter(e => e.type === 'poo').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts && (!lastPooTime || ts > lastPooTime)) lastPooTime = ts;
+  });
+
+  if (!lastPooTime) {
+    banner.classList.remove('active');
+    return;
+  }
+
+  const diff = now - lastPooTime;
+  if (diff > thresholdMs) {
+    const totalHrs = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    let timeStr;
+    if (currentLang === 'ja') {
+      timeStr = totalHrs + '時間' + (mins > 0 ? mins + '分' : '');
+    } else {
+      timeStr = totalHrs + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
+    }
+    const bannerText = t('pooReminderBanner').replace('{time}', timeStr);
+    banner.innerHTML = '&#x1F4A9; ' + bannerText;
+    banner.classList.add('active');
+  } else {
+    banner.classList.remove('active');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DEFAULT FEED TYPE
+// ═══════════════════════════════════════════════════════
+function saveDefaultFeedType() {
+  const val = document.getElementById('defaultFeedTypeSelect').value;
+  localStorage.setItem('niko_default_feed_type', val);
+}
+
+function loadDefaultFeedType() {
+  const val = localStorage.getItem('niko_default_feed_type') || 'formula';
+  document.getElementById('defaultFeedTypeSelect').value = val;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3352,6 +3567,7 @@ function startTimeSinceRefresh() {
     if (!document.hidden) {
       renderTimeSinceLast();
       checkFeedReminder();
+      checkPooReminder();
     }
   }, 60000);
 }
@@ -3360,9 +3576,11 @@ function startTimeSinceRefresh() {
 // INIT
 // ═══════════════════════════════════════════════════════
 document.getElementById('viewDate').value = todayStr();
-// Load baby profile and feed reminder settings
+// Load settings
 loadProfile();
 loadFeedReminder();
+loadPooReminder();
+loadDefaultFeedType();
 // Apply saved language on load
 setLang(currentLang);
 syncFromCloud();
@@ -3371,6 +3589,7 @@ startTimeSinceRefresh();
 checkSleepActive();
 renderTimeSinceLast();
 checkFeedReminder();
+checkPooReminder();
 </script>
 </body>
 </html>
