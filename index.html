@@ -935,6 +935,7 @@ body {
 <div class="header">
   <h1>&#x1F476; <span id="appTitle">Niko Tracker</span></h1>
   <div class="date-display" id="headerDate"></div>
+  <div class="date-display" id="headerAge" style="font-size:12px;opacity:0.75;margin-top:1px"></div>
   <div class="lang-toggle">
     <button class="lang-btn active" id="langEn" onclick="setLang('en')">EN</button>
     <button class="lang-btn" id="langJa" onclick="setLang('ja')">JP</button>
@@ -1243,7 +1244,7 @@ let entriesCache = [];     // local in-memory cache
 let isSyncing = false;
 
 // Baby profile data
-let babyProfile = { name: 'Niko', birthdate: '' };
+let babyProfile = { name: 'Baby', birthdate: '' };
 (function() {
   const stored = localStorage.getItem('niko_profile');
   if (stored) try { babyProfile = JSON.parse(stored); } catch(e) {}
@@ -1551,7 +1552,7 @@ function randomFunToast(category) {
   const lang = currentLang || 'en';
   const msgs = funToasts[category][lang] || funToasts[category].en;
   const msg = msgs[Math.floor(Math.random() * msgs.length)];
-  return msg.replace('{name}', babyProfile.name || 'Niko');
+  return msg.replace('{name}', babyProfile.name || 'Baby');
 }
 function showFunToast(icon, msg) {
   const el = document.getElementById('funToast');
@@ -2830,7 +2831,7 @@ function loadProfile() {
 }
 
 async function saveProfile() {
-  babyProfile.name = document.getElementById('babyNameInput').value.trim() || 'Niko';
+  babyProfile.name = document.getElementById('babyNameInput').value.trim() || 'Baby';
   babyProfile.birthdate = document.getElementById('babyBirthdateInput').value || '';
   localStorage.setItem('niko_profile', JSON.stringify(babyProfile));
   applyProfileToUI();
@@ -2844,31 +2845,50 @@ async function saveProfile() {
 }
 
 function applyProfileToUI() {
-  const name = babyProfile.name || 'Niko';
-  if (currentLang === 'ja') {
-    document.getElementById('appTitle').textContent = name + t('trackerSuffix');
-  } else {
-    document.getElementById('appTitle').textContent = name + t('trackerSuffix');
-  }
+  const name = babyProfile.name || 'Baby';
+  document.getElementById('appTitle').textContent = name + t('trackerSuffix');
   document.title = name + ' Tracker';
+  // Update age in header
+  const ageStr = getBabyAgeStr();
+  const ageEl = document.getElementById('headerAge');
+  ageEl.textContent = ageStr;
+  ageEl.style.display = ageStr ? 'block' : 'none';
 }
 
 function getBabyAgeStr() {
   if (!babyProfile.birthdate) return '';
   const birth = new Date(babyProfile.birthdate + 'T00:00:00');
   const now = new Date();
+  const totalDays = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
+  if (totalDays < 0) return '';
+
+  // Calculate months precisely
   let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   if (now.getDate() < birth.getDate()) months--;
-  if (months < 1) {
-    const days = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
-    return currentLang === 'ja' ? days + '日' : days + ' days old';
+
+  if (months < 3) {
+    // Under 3 months: show weeks and days
+    const weeks = Math.floor(totalDays / 7);
+    const days = totalDays % 7;
+    if (currentLang === 'ja') {
+      if (weeks === 0) return days + '日';
+      return weeks + '週' + (days > 0 ? days + '日' : '');
+    }
+    if (weeks === 0) return days + (days === 1 ? ' day old' : ' days old');
+    return weeks + (weeks === 1 ? ' week' : ' weeks') + (days > 0 ? ', ' + days + (days === 1 ? ' day old' : ' days old') : ' old');
   }
-  if (months < 24) {
-    return currentLang === 'ja' ? months + 'ヶ月' : months + ' months old';
+
+  // 3+ months: show months and weeks
+  // Find the date that is exactly `months` months after birth
+  const monthAnniversary = new Date(birth);
+  monthAnniversary.setMonth(monthAnniversary.getMonth() + months);
+  const remainingDays = Math.floor((now - monthAnniversary) / (1000 * 60 * 60 * 24));
+  const remainingWeeks = Math.floor(remainingDays / 7);
+
+  if (currentLang === 'ja') {
+    return months + 'ヶ月' + (remainingWeeks > 0 ? remainingWeeks + '週' : '');
   }
-  const years = Math.floor(months / 12);
-  const remMonths = months % 12;
-  return currentLang === 'ja' ? years + '歳' + (remMonths > 0 ? remMonths + 'ヶ月' : '') : years + ' yr' + (remMonths > 0 ? ' ' + remMonths + ' mo' : '');
+  return months + (months === 1 ? ' month' : ' months') + (remainingWeeks > 0 ? ', ' + remainingWeeks + (remainingWeeks === 1 ? ' week old' : ' weeks old') : ' old');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2994,7 +3014,7 @@ function renderDoctorReport() {
   let html = '';
 
   // Section A: Baby Info
-  const name = babyProfile.name || 'Niko';
+  const name = babyProfile.name || 'Baby';
   const ageStr = getBabyAgeStr();
   const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
   const fromDate = sinceDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -3239,7 +3259,7 @@ function copyReport() {
     return d >= sinceDate && d <= now;
   });
 
-  const name = babyProfile.name || 'Niko';
+  const name = babyProfile.name || 'Baby';
   const ageStr = getBabyAgeStr();
   const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
   const fromDate = sinceDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
