@@ -573,14 +573,14 @@ body {
   border: none;
   background: var(--bg);
   border-radius: 10px;
-  padding: 12px 24px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .nav-btn:active { background: var(--border); }
 
@@ -696,6 +696,238 @@ body {
 }
 .fun-toast .fun-icon { font-size: 44px; display: block; margin-bottom: 8px; }
 .fun-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* Baby Profile */
+.profile-section {
+  max-width: 500px;
+  margin: 12px auto 0;
+  padding: 0 16px;
+}
+.profile-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+.profile-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+.profile-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.profile-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.profile-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+}
+.profile-field input:focus { outline: none; border-color: var(--primary); }
+
+/* Stool Color Picker */
+.color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-opt {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s;
+}
+.color-opt:active { transform: scale(0.9); }
+.color-opt.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-dark);
+}
+.color-opt.selected::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.color-opt[data-color="white"].selected::after { color: #333; text-shadow: none; }
+.color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* Medical Alert Modal */
+.alert-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 250;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.alert-overlay.active { display: flex; }
+.alert-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  animation: fadeIn 0.2s;
+}
+.alert-card .alert-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+.alert-card .alert-title { font-size: 18px; font-weight: 700; color: var(--danger); margin-bottom: 8px; }
+.alert-card .alert-msg { font-size: 15px; color: var(--text); line-height: 1.5; margin-bottom: 16px; }
+.alert-card .alert-dismiss {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Feed Reminder Banner */
+.feed-reminder-banner {
+  display: none;
+  background: var(--feed);
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: pulse 2s infinite;
+}
+.feed-reminder-banner.active { display: block; }
+
+/* Feed Reminder Settings */
+.reminder-setting {
+  max-width: 500px;
+  margin: 8px auto 0;
+  padding: 0 16px;
+}
+.reminder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow);
+}
+.reminder-row label { font-size: 13px; font-weight: 600; color: var(--text); }
+.reminder-row select {
+  padding: 6px 10px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+}
+
+/* Doctor Report Overlay */
+.report-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.report-overlay.active { display: flex; }
+.report-card {
+  background: var(--card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: fadeIn 0.2s;
+}
+.report-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.report-period label { font-size: 13px; font-weight: 600; color: var(--text-light); }
+.report-period input[type="date"] {
+  padding: 6px 10px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+}
+.report-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.report-section:last-child { border-bottom: none; }
+.report-section-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+.report-row .report-label { color: var(--text-light); }
+.report-row .report-value { font-weight: 600; color: var(--text); }
+.report-alert {
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.report-note { padding: 4px 0; font-size: 13px; color: var(--text); }
+.report-note .report-note-date { font-weight: 600; color: var(--text-light); margin-right: 6px; }
+.report-copy-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  margin-top: 8px;
+}
+.report-copy-btn:active { background: var(--bg); }
 </style>
 </head>
 <body>
@@ -712,6 +944,10 @@ body {
 
 <div class="sleep-active-banner" id="sleepBanner" onclick="openSleepWake()">
   &#x1F4A4; Sleeping since <span id="sleepSinceTime"></span> — tap to log wake up
+</div>
+
+<div class="feed-reminder-banner" id="feedReminderBanner" onclick="openModal('feed')">
+  &#x1F37C; It's been <span id="feedReminderTime"></span> since last feed
 </div>
 
 <!-- Sync status -->
@@ -769,6 +1005,38 @@ body {
 <p class="section-title" style="margin-top:6px">Today's Log</p>
 <div class="timeline" id="timeline"></div>
 
+<!-- Baby Profile -->
+<div class="profile-section">
+  <div class="profile-card">
+    <h3 id="profileTitle">&#x1F476; Baby Profile</h3>
+    <div class="profile-fields">
+      <div class="profile-field">
+        <label id="labelBabyName">Name</label>
+        <input type="text" id="babyNameInput" placeholder="Baby name" onblur="saveProfile()" onchange="saveProfile()">
+      </div>
+      <div class="profile-field">
+        <label id="labelBirthday">Birthday</label>
+        <input type="date" id="babyBirthdateInput" onblur="saveProfile()" onchange="saveProfile()">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Feed Reminder Setting -->
+<div class="reminder-setting">
+  <div class="reminder-row">
+    <label id="reminderLabel">&#x1F37C; Feed Reminder</label>
+    <select id="feedReminderSelect" onchange="saveFeedReminder()">
+      <option value="off" id="optReminderOff">Off</option>
+      <option value="150">2.5h</option>
+      <option value="180">3h</option>
+      <option value="210">3.5h</option>
+      <option value="240">4h</option>
+      <option value="270">4.5h</option>
+    </select>
+  </div>
+</div>
+
 <!-- Data management -->
 <div class="data-actions">
   <button class="data-btn" id="exportBtn" onclick="exportData()">&#x1F4E5; Export CSV</button>
@@ -781,6 +1049,9 @@ body {
   </button>
   <button class="nav-btn" onclick="openTrends()">
     &#x1F4C8; <span id="navLabelTrends">Trends</span>
+  </button>
+  <button class="nav-btn" onclick="openDoctorReport()">
+    &#x1FA7A; <span id="navLabelReport">Report</span>
   </button>
 </div>
 
@@ -860,6 +1131,18 @@ body {
           </div>
         </div>
         <div class="form-group">
+          <label id="labelPooColor">Color</label>
+          <div class="color-picker" id="pooColorPicker">
+            <button type="button" class="color-opt" data-color="yellow" style="background:#F0D060" title="Yellow"></button>
+            <button type="button" class="color-opt" data-color="green" style="background:#7BAF5E" title="Green"></button>
+            <button type="button" class="color-opt selected" data-color="brown" style="background:#8B6914" title="Brown"></button>
+            <button type="button" class="color-opt" data-color="red" style="background:#D9534F" title="Red"></button>
+            <button type="button" class="color-opt" data-color="white" style="background:#F5F5F5;border:1px solid #ccc" title="White"></button>
+            <button type="button" class="color-opt" data-color="black" style="background:#333" title="Black"></button>
+          </div>
+          <input type="hidden" id="pooColor" value="brown">
+        </div>
+        <div class="form-group">
           <label id="labelPooDate">Date</label>
           <input type="date" id="pooDate">
         </div>
@@ -919,6 +1202,32 @@ body {
   </div>
 </div>
 
+<!-- Medical Alert Modal -->
+<div class="alert-overlay" id="alertOverlay" onclick="closeAlertBg(event)">
+  <div class="alert-card">
+    <span class="alert-icon" id="alertIcon"></span>
+    <div class="alert-title" id="alertTitle">Medical Alert</div>
+    <div class="alert-msg" id="alertMsg"></div>
+    <button class="alert-dismiss" onclick="closeAlert()" id="alertDismissBtn">OK</button>
+  </div>
+</div>
+
+<!-- Doctor Report Overlay -->
+<div class="report-overlay" id="reportOverlay" onclick="closeReportBg(event)">
+  <div class="report-card">
+    <div class="modal-header">
+      <h2 id="reportTitle">&#x1FA7A; Doctor Visit Report</h2>
+      <button class="modal-close" onclick="closeReport()">&#215;</button>
+    </div>
+    <div class="report-period">
+      <label id="reportSinceLabel">Since:</label>
+      <input type="date" id="reportSince" onchange="renderDoctorReport()">
+    </div>
+    <div id="reportBody"></div>
+    <button class="report-copy-btn" onclick="copyReport()" id="reportCopyBtn">&#x1F4CB; Copy to Clipboard</button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // FIREBASE CONFIG — This is your shared cloud database
@@ -932,6 +1241,13 @@ const DB = FIREBASE_URL + '/' + SECRET_PATH;
 // ═══════════════════════════════════════════════════════
 let entriesCache = [];     // local in-memory cache
 let isSyncing = false;
+
+// Baby profile data
+let babyProfile = { name: 'Niko', birthdate: '' };
+(function() {
+  const stored = localStorage.getItem('niko_profile');
+  if (stored) try { babyProfile = JSON.parse(stored); } catch(e) {}
+})();
 
 // --- Read all entries from Firebase ---
 async function syncFromCloud() {
@@ -956,10 +1272,21 @@ async function syncFromCloud() {
     } else {
       localStorage.removeItem('niko_sleep_active');
     }
+    // Sync baby profile
+    const profileRes = await fetch(DB + '/profile.json');
+    const profileData = await profileRes.json();
+    if (profileData) {
+      babyProfile = profileData;
+      localStorage.setItem('niko_profile', JSON.stringify(babyProfile));
+      document.getElementById('babyNameInput').value = babyProfile.name || '';
+      document.getElementById('babyBirthdateInput').value = babyProfile.birthdate || '';
+      applyProfileToUI();
+    }
     setSyncStatus('ok', t('syncedJustNow'));
     renderEntries();
     renderTimeSinceLast();
     checkSleepActive();
+    checkFeedReminder();
   } catch (err) {
     console.error('Sync failed:', err);
     setSyncStatus('error', t('syncFailed'));
@@ -1172,7 +1499,7 @@ const funToasts = {
       'おやすみなさい！',
       'いい夢見てね！',
       'すやすやタイム！',
-      'おやすみ、ニコちゃん！',
+      'おやすみ、{name}ちゃん！',
       '夢の世界へ出発！',
       'ねんねの時間だよ！',
       'お星さまが待ってるよ！',
@@ -1184,7 +1511,7 @@ const funToasts = {
       'Goodnight!',
       'Sweet dreams!',
       'Sleepy time!',
-      'Nighty night, Niko!',
+      'Nighty night, {name}!',
       'Off to dreamland!',
       'Time for sleepies!',
       'The stars are waiting!',
@@ -1196,7 +1523,7 @@ const funToasts = {
   sleepEnd: {
     ja: [
       'おはようございます！',
-      'おはよう、ニコちゃん！',
+      'おはよう、{name}ちゃん！',
       'よく寝たね！',
       '元気に起きた！',
       '世界が待ってるよ！',
@@ -1208,7 +1535,7 @@ const funToasts = {
     ],
     en: [
       'Good morning!',
-      'Morning, Niko!',
+      'Morning, {name}!',
       'Great sleep!',
       'Wide awake!',
       'The world awaits!',
@@ -1223,7 +1550,8 @@ const funToasts = {
 function randomFunToast(category) {
   const lang = currentLang || 'en';
   const msgs = funToasts[category][lang] || funToasts[category].en;
-  return msgs[Math.floor(Math.random() * msgs.length)];
+  const msg = msgs[Math.floor(Math.random() * msgs.length)];
+  return msg.replace('{name}', babyProfile.name || 'Niko');
 }
 function showFunToast(icon, msg) {
   const el = document.getElementById('funToast');
@@ -1365,12 +1693,70 @@ const i18n = {
     // Nav buttons
     navSummaries: 'Summaries',
     navTrends: 'Trends',
+    navReport: 'Report',
     // Placeholders
     phVolume: 'e.g. 90',
     phPooNotes: 'Color, consistency...',
     phNote: 'Anything to remember...',
+    phBabyName: 'Baby name',
     // Sleep banner icon
-    sleepBannerIcon: '&#x1F4A4;'
+    sleepBannerIcon: '&#x1F4A4;',
+    // Baby Profile
+    babyProfile: 'Baby Profile',
+    babyName: 'Name',
+    birthday: 'Birthday',
+    trackerSuffix: ' Tracker',
+    // Stool Colors
+    pooColor: 'Color',
+    colorYellow: 'Yellow',
+    colorGreen: 'Green',
+    colorBrown: 'Brown',
+    colorRed: 'Red',
+    colorWhite: 'White',
+    colorBlack: 'Black',
+    // Medical alerts
+    medicalAlert: 'Medical Alert',
+    alertWhiteStool: 'White or chalky stool may indicate a serious liver or bile duct condition. Please contact your pediatrician immediately.',
+    alertRedStool: 'Red stool may indicate blood. Please contact your pediatrician.',
+    alertBlackStool: 'Black stool after the first few days may be a concern. Please contact your pediatrician.',
+    dismiss: 'OK, Understood',
+    // Feed reminder
+    feedReminder: 'Feed Reminder',
+    feedReminderOff: 'Off',
+    feedReminderBanner: "It's been {time} since last feed",
+    // Doctor report
+    doctorReport: 'Doctor Visit Report',
+    reportPeriod: 'Report Period',
+    since: 'Since:',
+    feedingSummary: 'Feeding Summary',
+    avgDailyVolume: 'Avg daily volume',
+    avgFeedsPerDay: 'Avg feeds/day',
+    avgTimeBetween: 'Avg time between',
+    primaryFeedType: 'Primary type',
+    volumeTrend: 'Volume trend',
+    sleepSummaryReport: 'Sleep Summary',
+    avgDailySleep: 'Avg daily sleep',
+    avgLongestStretch: 'Avg longest stretch',
+    dayNightSplit: 'Day/Night split',
+    sleepTrend: 'Sleep trend',
+    diaperSummary: 'Diaper Summary',
+    avgPoosPerDay: 'Avg poos/day',
+    stoolColors: 'Stool colors',
+    topicsToDiscuss: 'Notes & Topics for Doctor',
+    patternsAlerts: 'Patterns & Alerts',
+    copyToClipboard: 'Copy to Clipboard',
+    copied: 'Copied!',
+    increasing: 'Increasing',
+    decreasing: 'Decreasing',
+    stable: 'Stable',
+    noDataForPeriod: 'No data for this period.',
+    redStoolOn: 'Red stool recorded on',
+    whiteStoolOn: 'White stool recorded on',
+    blackStoolOn: 'Black stool recorded on',
+    feedGapAlert: 'Longest feeding gap:',
+    lowFeedDays: 'days with fewer than 4 feeds',
+    volumeChange: 'Feed volume changed',
+    overPeriod: 'over this period'
   },
   ja: {
     appTitle: 'ニコトラッカー',
@@ -1479,10 +1865,68 @@ const i18n = {
     noDataExport: 'データがありません。',
     navSummaries: 'サマリー',
     navTrends: 'トレンド',
+    navReport: 'レポート',
     phVolume: '例: 90',
-    phPooNotes: '色、固さなど...',
+    phPooNotes: '固さなど...',
     phNote: '覚えておきたいこと...',
-    sleepBannerIcon: '&#x1F4A4;'
+    phBabyName: '赤ちゃんの名前',
+    sleepBannerIcon: '&#x1F4A4;',
+    // Baby Profile
+    babyProfile: '赤ちゃんプロフィール',
+    babyName: '名前',
+    birthday: '誕生日',
+    trackerSuffix: 'トラッカー',
+    // Stool Colors
+    pooColor: '色',
+    colorYellow: '黄色',
+    colorGreen: '緑',
+    colorBrown: '茶色',
+    colorRed: '赤',
+    colorWhite: '白',
+    colorBlack: '黒',
+    // Medical alerts
+    medicalAlert: '医療アラート',
+    alertWhiteStool: '白っぽいうんちは肝臓や胆管の深刻な状態を示す可能性があります。すぐに小児科医に連絡してください。',
+    alertRedStool: '赤いうんちは血液が含まれている可能性があります。小児科医に連絡してください。',
+    alertBlackStool: '生後数日以降の黒いうんちは注意が必要です。小児科医に連絡してください。',
+    dismiss: 'OK、了解しました',
+    // Feed reminder
+    feedReminder: 'ミルクリマインダー',
+    feedReminderOff: 'オフ',
+    feedReminderBanner: '最後のミルクから{time}経ちました',
+    // Doctor report
+    doctorReport: '診察レポート',
+    reportPeriod: 'レポート期間',
+    since: '開始日:',
+    feedingSummary: 'ミルクサマリー',
+    avgDailyVolume: '1日平均量',
+    avgFeedsPerDay: '1日平均回数',
+    avgTimeBetween: '平均間隔',
+    primaryFeedType: '主な種類',
+    volumeTrend: '量のトレンド',
+    sleepSummaryReport: '睡眠サマリー',
+    avgDailySleep: '1日平均睡眠',
+    avgLongestStretch: '平均最長睡眠',
+    dayNightSplit: '昼/夜の割合',
+    sleepTrend: '睡眠トレンド',
+    diaperSummary: 'おむつサマリー',
+    avgPoosPerDay: '1日平均うんち',
+    stoolColors: 'うんちの色',
+    topicsToDiscuss: '先生への相談メモ',
+    patternsAlerts: 'パターンとアラート',
+    copyToClipboard: 'クリップボードにコピー',
+    copied: 'コピーしました！',
+    increasing: '増加傾向',
+    decreasing: '減少傾向',
+    stable: '安定',
+    noDataForPeriod: 'この期間のデータがありません。',
+    redStoolOn: '赤いうんち:',
+    whiteStoolOn: '白いうんち:',
+    blackStoolOn: '黒いうんち:',
+    feedGapAlert: '最長ミルク間隔:',
+    lowFeedDays: '日はミルク4回未満',
+    volumeChange: 'ミルク量の変化',
+    overPeriod: 'この期間中'
   }
 };
 
@@ -1535,9 +1979,34 @@ function applyLang() {
   // Nav buttons
   document.getElementById('navLabelSummaries').textContent = t('navSummaries');
   document.getElementById('navLabelTrends').textContent = t('navTrends');
+  document.getElementById('navLabelReport').textContent = t('navReport');
 
   // Export button
   document.getElementById('exportBtn').innerHTML = '&#x1F4E5; ' + t('exportCsv');
+
+  // Baby profile labels
+  document.getElementById('profileTitle').innerHTML = '&#x1F476; ' + t('babyProfile');
+  document.getElementById('labelBabyName').textContent = t('babyName');
+  document.getElementById('labelBirthday').textContent = t('birthday');
+  document.getElementById('babyNameInput').placeholder = t('phBabyName');
+
+  // Stool color label
+  document.getElementById('labelPooColor').textContent = t('pooColor');
+
+  // Feed reminder
+  document.getElementById('reminderLabel').innerHTML = '&#x1F37C; ' + t('feedReminder');
+  document.getElementById('optReminderOff').textContent = t('feedReminderOff');
+
+  // Report labels
+  document.getElementById('reportTitle').innerHTML = '&#x1FA7A; ' + t('doctorReport');
+  document.getElementById('reportSinceLabel').textContent = t('since');
+  document.getElementById('reportCopyBtn').innerHTML = '&#x1F4CB; ' + t('copyToClipboard');
+
+  // Apply profile to UI (title, etc)
+  applyProfileToUI();
+
+  // Update feed reminder banner text
+  checkFeedReminder();
 
   // Form labels
   document.getElementById('labelFellAsleep').textContent = t('fellAsleep');
@@ -1669,6 +2138,7 @@ function openModal(type) {
     document.getElementById('pooTime').value = now;
     document.getElementById('pooDate').value = today;
     document.getElementById('pooNotes').value = '';
+    setPooColor('brown');
     btn.textContent = t('savePoo');
   } else {
     document.getElementById('noteFields').style.display = 'block';
@@ -1724,6 +2194,7 @@ function editEntry(id) {
     document.getElementById('pooPee').value = entry.pee || 'yes';
     document.getElementById('pooDate').value = entry.date || '';
     document.getElementById('pooNotes').value = entry.notes || '';
+    setPooColor(entry.color || 'brown');
     btn.textContent = t('updatePoo');
   } else {
     document.getElementById('noteFields').style.display = 'block';
@@ -1784,19 +2255,25 @@ async function saveEntry(e) {
       await addEntry({ type: 'feed', date, time, volume: volume ? Number(volume) : null, feedType });
       showFunToast('\uD83C\uDF7C', randomFunToast('feed'));
     }
+    checkFeedReminder();
   } else if (type === 'poo') {
     const time = document.getElementById('pooTime').value;
     const pee = document.getElementById('pooPee').value;
     const date = document.getElementById('pooDate').value;
     const notes = document.getElementById('pooNotes').value;
+    const color = document.getElementById('pooColor').value;
     if (!time) { btn.disabled = false; return; }
 
     if (isEditing) {
-      await updateEntry(editingId, editingFbKey, { time, pee, date, notes });
+      await updateEntry(editingId, editingFbKey, { time, pee, date, notes, color });
     } else {
-      await addEntry({ type: 'poo', date, time, pee, notes });
+      await addEntry({ type: 'poo', date, time, pee, notes, color });
       showFunToast('\uD83D\uDCA9', randomFunToast('poo'));
     }
+    // Red-flag stool color alert
+    if (color === 'white') showMedicalAlert('alertWhiteStool');
+    else if (color === 'red') showMedicalAlert('alertRedStool');
+    else if (color === 'black') showMedicalAlert('alertBlackStool');
   } else {
     const time = document.getElementById('noteTime').value;
     const date = document.getElementById('noteDate').value;
@@ -1860,7 +2337,8 @@ function renderEntries() {
     } else if (e.type === 'poo') {
       icon = '&#x1F4A9;'; iconClass = 'poo';
       timeStr = formatTime12(e.time);
-      title = e.pee === 'yes' ? t('pooPeeTitle') : t('pooTitle');
+      const colorDot = e.color ? '<span class="color-dot" style="background:' + getColorHex(e.color) + (e.color === 'white' ? ';border:1px solid #ccc' : '') + '"></span>' : '';
+      title = (e.pee === 'yes' ? t('pooPeeTitle') : t('pooTitle')) + colorDot;
       sub = e.notes || '';
     } else {
       icon = '&#x1F4DD;'; iconClass = 'note';
@@ -2343,12 +2821,480 @@ function renderTrendStats(entries, today) {
 }
 
 // ═══════════════════════════════════════════════════════
+// BABY PROFILE
+// ═══════════════════════════════════════════════════════
+function loadProfile() {
+  document.getElementById('babyNameInput').value = babyProfile.name || '';
+  document.getElementById('babyBirthdateInput').value = babyProfile.birthdate || '';
+  applyProfileToUI();
+}
+
+async function saveProfile() {
+  babyProfile.name = document.getElementById('babyNameInput').value.trim() || 'Niko';
+  babyProfile.birthdate = document.getElementById('babyBirthdateInput').value || '';
+  localStorage.setItem('niko_profile', JSON.stringify(babyProfile));
+  applyProfileToUI();
+  try {
+    await fetch(DB + '/profile.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(babyProfile)
+    });
+  } catch(e) { console.error('Profile sync failed:', e); }
+}
+
+function applyProfileToUI() {
+  const name = babyProfile.name || 'Niko';
+  if (currentLang === 'ja') {
+    document.getElementById('appTitle').textContent = name + t('trackerSuffix');
+  } else {
+    document.getElementById('appTitle').textContent = name + t('trackerSuffix');
+  }
+  document.title = name + ' Tracker';
+}
+
+function getBabyAgeStr() {
+  if (!babyProfile.birthdate) return '';
+  const birth = new Date(babyProfile.birthdate + 'T00:00:00');
+  const now = new Date();
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  if (now.getDate() < birth.getDate()) months--;
+  if (months < 1) {
+    const days = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
+    return currentLang === 'ja' ? days + '日' : days + ' days old';
+  }
+  if (months < 24) {
+    return currentLang === 'ja' ? months + 'ヶ月' : months + ' months old';
+  }
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  return currentLang === 'ja' ? years + '歳' + (remMonths > 0 ? remMonths + 'ヶ月' : '') : years + ' yr' + (remMonths > 0 ? ' ' + remMonths + ' mo' : '');
+}
+
+// ═══════════════════════════════════════════════════════
+// STOOL COLOR PICKER
+// ═══════════════════════════════════════════════════════
+const colorHexMap = { yellow: '#F0D060', green: '#7BAF5E', brown: '#8B6914', red: '#D9534F', white: '#F5F5F5', black: '#333' };
+
+function getColorHex(color) { return colorHexMap[color] || '#8B6914'; }
+
+function setPooColor(color) {
+  document.getElementById('pooColor').value = color;
+  document.querySelectorAll('#pooColorPicker .color-opt').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.color === color);
+  });
+}
+
+// Color picker click handler
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.color-opt');
+  if (btn && btn.closest('#pooColorPicker')) {
+    setPooColor(btn.dataset.color);
+  }
+});
+
+function showMedicalAlert(msgKey) {
+  const icons = { alertWhiteStool: '\uD83D\uDEA8', alertRedStool: '\u26A0\uFE0F', alertBlackStool: '\u26A0\uFE0F' };
+  document.getElementById('alertIcon').textContent = icons[msgKey] || '\u26A0\uFE0F';
+  document.getElementById('alertTitle').textContent = t('medicalAlert');
+  document.getElementById('alertMsg').textContent = t(msgKey);
+  document.getElementById('alertDismissBtn').textContent = t('dismiss');
+  document.getElementById('alertOverlay').classList.add('active');
+}
+
+function closeAlert() { document.getElementById('alertOverlay').classList.remove('active'); }
+function closeAlertBg(e) { if (e.target === document.getElementById('alertOverlay')) closeAlert(); }
+
+// ═══════════════════════════════════════════════════════
+// FEED REMINDER
+// ═══════════════════════════════════════════════════════
+function saveFeedReminder() {
+  const val = document.getElementById('feedReminderSelect').value;
+  localStorage.setItem('niko_feed_reminder', val);
+  checkFeedReminder();
+}
+
+function loadFeedReminder() {
+  const val = localStorage.getItem('niko_feed_reminder') || 'off';
+  document.getElementById('feedReminderSelect').value = val;
+}
+
+function checkFeedReminder() {
+  const threshold = localStorage.getItem('niko_feed_reminder') || 'off';
+  const banner = document.getElementById('feedReminderBanner');
+  if (threshold === 'off') {
+    banner.classList.remove('active');
+    return;
+  }
+
+  const thresholdMs = parseInt(threshold) * 60 * 1000;
+  const entries = loadEntries();
+  const now = new Date();
+
+  // Find most recent feed
+  let lastFeedTime = null;
+  entries.filter(e => e.type === 'feed').forEach(e => {
+    const ts = getEntryTimestamp(e);
+    if (ts && (!lastFeedTime || ts > lastFeedTime)) lastFeedTime = ts;
+  });
+
+  if (!lastFeedTime) {
+    banner.classList.remove('active');
+    return;
+  }
+
+  const diff = now - lastFeedTime;
+  if (diff > thresholdMs) {
+    const hrs = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    let timeStr;
+    if (currentLang === 'ja') {
+      timeStr = (hrs > 0 ? hrs + '時間' : '') + mins + '分';
+    } else {
+      timeStr = (hrs > 0 ? hrs + 'h ' : '') + mins + 'm';
+    }
+    const bannerText = t('feedReminderBanner').replace('{time}', timeStr);
+    banner.innerHTML = '&#x1F37C; ' + bannerText;
+    banner.classList.add('active');
+  } else {
+    banner.classList.remove('active');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DOCTOR VISIT REPORT
+// ═══════════════════════════════════════════════════════
+function openDoctorReport() {
+  // Default to 30 days ago
+  const since = addDays(todayStr(), -30);
+  document.getElementById('reportSince').value = since;
+  document.getElementById('reportOverlay').classList.add('active');
+  renderDoctorReport();
+}
+function closeReport() { document.getElementById('reportOverlay').classList.remove('active'); }
+function closeReportBg(e) { if (e.target === document.getElementById('reportOverlay')) closeReport(); }
+
+function renderDoctorReport() {
+  const sinceStr = document.getElementById('reportSince').value;
+  if (!sinceStr) return;
+  const entries = loadEntries();
+  const now = new Date();
+  const sinceDate = new Date(sinceStr + 'T00:00:00');
+  const periodEntries = entries.filter(e => {
+    const d = new Date(e.date + 'T00:00:00');
+    return d >= sinceDate && d <= now;
+  });
+
+  const body = document.getElementById('reportBody');
+  if (periodEntries.length === 0) {
+    body.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px">' + t('noDataForPeriod') + '</p>';
+    return;
+  }
+
+  let html = '';
+
+  // Section A: Baby Info
+  const name = babyProfile.name || 'Niko';
+  const ageStr = getBabyAgeStr();
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  const fromDate = sinceDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
+  const toDate = now.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
+  html += '<div class="report-section">';
+  html += '<div class="report-section-title">\uD83D\uDC76 ' + name + (ageStr ? ' \u2014 ' + ageStr : '') + '</div>';
+  html += '<div class="report-row"><span class="report-label">' + t('reportPeriod') + '</span><span class="report-value">' + fromDate + ' \u2013 ' + toDate + '</span></div>';
+  html += '</div>';
+
+  // Count days in period
+  const totalDays = Math.max(1, Math.round((now - sinceDate) / (1000 * 60 * 60 * 24)));
+
+  // Section B: Feeding Summary
+  const feedEntries = periodEntries.filter(e => e.type === 'feed');
+  if (feedEntries.length > 0) {
+    const totalVolume = feedEntries.reduce((s, e) => s + (e.volume || 0), 0);
+    const avgDailyVol = Math.round(totalVolume / totalDays);
+    const avgFeedsDay = (feedEntries.length / totalDays).toFixed(1);
+
+    // Average time between feedings
+    const feedTs = feedEntries.map(e => getEntryTimestamp(e)).filter(Boolean).sort((a, b) => a - b);
+    let avgGapStr = '--';
+    if (feedTs.length > 1) {
+      let totalGap = 0;
+      for (let i = 1; i < feedTs.length; i++) totalGap += feedTs[i] - feedTs[i - 1];
+      const avgGapMins = Math.round((totalGap / (feedTs.length - 1)) / 60000);
+      avgGapStr = formatMins(avgGapMins);
+    }
+
+    // Primary feed type
+    const typeCounts = {};
+    feedEntries.forEach(e => { typeCounts[e.feedType || 'formula'] = (typeCounts[e.feedType || 'formula'] || 0) + 1; });
+    const primaryType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
+    const primaryPct = Math.round((typeCounts[primaryType] / feedEntries.length) * 100);
+    const typeLabel = primaryType === 'formula' ? t('formulaTitle') : primaryType === 'breast' ? t('breastMilkTitle') : t('mixedFeedTitle');
+
+    // Volume trend (first half vs second half)
+    const midDate = new Date(sinceDate.getTime() + (now - sinceDate) / 2);
+    const firstHalf = feedEntries.filter(e => new Date(e.date + 'T00:00:00') < midDate);
+    const secondHalf = feedEntries.filter(e => new Date(e.date + 'T00:00:00') >= midDate);
+    const firstAvg = firstHalf.length > 0 ? firstHalf.reduce((s, e) => s + (e.volume || 0), 0) / firstHalf.length : 0;
+    const secondAvg = secondHalf.length > 0 ? secondHalf.reduce((s, e) => s + (e.volume || 0), 0) / secondHalf.length : 0;
+    let trendStr = t('stable') + ' \u2192';
+    if (secondAvg > firstAvg * 1.1) trendStr = t('increasing') + ' \u2191';
+    else if (secondAvg < firstAvg * 0.9) trendStr = t('decreasing') + ' \u2193';
+
+    html += '<div class="report-section">';
+    html += '<div class="report-section-title">\uD83C\uDF7C ' + t('feedingSummary') + '</div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgDailyVolume') + '</span><span class="report-value">' + avgDailyVol + ' ml</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgFeedsPerDay') + '</span><span class="report-value">' + avgFeedsDay + '</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgTimeBetween') + '</span><span class="report-value">' + avgGapStr + '</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('primaryFeedType') + '</span><span class="report-value">' + typeLabel + ' (' + primaryPct + '%)</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('volumeTrend') + '</span><span class="report-value">' + trendStr + '</span></div>';
+    html += '</div>';
+  }
+
+  // Section C: Sleep Summary
+  const sleepEntries = periodEntries.filter(e => e.type === 'sleep');
+  if (sleepEntries.length > 0) {
+    const totalSleepMins = sleepEntries.reduce((s, e) => s + calcSleepMins(e), 0);
+    const avgDailySleepMins = Math.round(totalSleepMins / totalDays);
+
+    // Average longest stretch per day
+    const sleepByDay = {};
+    sleepEntries.forEach(e => {
+      if (!sleepByDay[e.date]) sleepByDay[e.date] = [];
+      sleepByDay[e.date].push(calcSleepMins(e));
+    });
+    const longestPerDay = Object.values(sleepByDay).map(arr => Math.max(...arr));
+    const avgLongest = longestPerDay.length > 0 ? Math.round(longestPerDay.reduce((a, b) => a + b, 0) / longestPerDay.length) : 0;
+
+    // Day vs night split
+    let dayMins = 0, nightMins = 0;
+    sleepEntries.filter(e => e.sleepStart && e.sleepEnd).forEach(e => {
+      const [sh, sm] = e.sleepStart.split(':').map(Number);
+      const startMinOfDay = sh * 60 + sm;
+      const totalMins = calcSleepMins(e);
+      for (let m = 0; m < totalMins; m++) {
+        const minuteOfDay = (startMinOfDay + m) % (24 * 60);
+        if (minuteOfDay >= 420 && minuteOfDay < 1140) dayMins++;
+        else nightMins++;
+      }
+    });
+    const totalDN = dayMins + nightMins;
+    const dayPct = totalDN > 0 ? Math.round((dayMins / totalDN) * 100) : 0;
+    const nightPct = totalDN > 0 ? 100 - dayPct : 0;
+
+    // Sleep trend
+    const midDate = new Date(sinceDate.getTime() + (now - sinceDate) / 2);
+    const firstSleep = sleepEntries.filter(e => new Date(e.date + 'T00:00:00') < midDate);
+    const secondSleep = sleepEntries.filter(e => new Date(e.date + 'T00:00:00') >= midDate);
+    const firstAvgS = firstSleep.length > 0 ? firstSleep.reduce((s, e) => s + calcSleepMins(e), 0) / firstSleep.length : 0;
+    const secondAvgS = secondSleep.length > 0 ? secondSleep.reduce((s, e) => s + calcSleepMins(e), 0) / secondSleep.length : 0;
+    let sleepTrendStr = t('stable') + ' \u2192';
+    if (secondAvgS > firstAvgS * 1.1) sleepTrendStr = t('increasing') + ' \u2191';
+    else if (secondAvgS < firstAvgS * 0.9) sleepTrendStr = t('decreasing') + ' \u2193';
+
+    html += '<div class="report-section">';
+    html += '<div class="report-section-title">\uD83D\uDCA4 ' + t('sleepSummaryReport') + '</div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgDailySleep') + '</span><span class="report-value">' + formatMins(avgDailySleepMins) + '</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgLongestStretch') + '</span><span class="report-value">' + formatMins(avgLongest) + '</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('dayNightSplit') + '</span><span class="report-value">' + dayPct + '% / ' + nightPct + '%</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('sleepTrend') + '</span><span class="report-value">' + sleepTrendStr + '</span></div>';
+    html += '</div>';
+  }
+
+  // Section D: Diaper Summary
+  const pooEntries = periodEntries.filter(e => e.type === 'poo');
+  if (pooEntries.length > 0) {
+    const avgPoos = (pooEntries.length / totalDays).toFixed(1);
+
+    // Color distribution
+    const colorCounts = {};
+    pooEntries.forEach(e => {
+      const c = e.color || 'brown';
+      colorCounts[c] = (colorCounts[c] || 0) + 1;
+    });
+    const colorStr = Object.keys(colorCounts)
+      .sort((a, b) => colorCounts[b] - colorCounts[a])
+      .map(c => {
+        const pct = Math.round((colorCounts[c] / pooEntries.length) * 100);
+        const colorKey = 'color' + c.charAt(0).toUpperCase() + c.slice(1);
+        return t(colorKey) + ' (' + pct + '%)';
+      }).join(', ');
+
+    html += '<div class="report-section">';
+    html += '<div class="report-section-title">\uD83D\uDCA9 ' + t('diaperSummary') + '</div>';
+    html += '<div class="report-row"><span class="report-label">' + t('avgPoosPerDay') + '</span><span class="report-value">' + avgPoos + '</span></div>';
+    html += '<div class="report-row"><span class="report-label">' + t('stoolColors') + '</span><span class="report-value">' + colorStr + '</span></div>';
+
+    // Flag concerning colors with dates
+    const flagColors = ['red', 'white', 'black'];
+    const alertKeys = { red: 'redStoolOn', white: 'whiteStoolOn', black: 'blackStoolOn' };
+    flagColors.forEach(fc => {
+      const flagged = pooEntries.filter(e => e.color === fc);
+      if (flagged.length > 0) {
+        const dates = flagged.map(e => formatDateShort(e.date)).join(', ');
+        html += '<div class="report-alert">\u26A0\uFE0F ' + t(alertKeys[fc]) + ' ' + dates + '</div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  // Section E: Notes & Questions for Doctor
+  const noteEntries = periodEntries.filter(e => e.type === 'note');
+  // Also gather stool flag events even without notes
+  const flagStoolEntries = periodEntries.filter(e => e.type === 'poo' && ['red', 'white', 'black'].includes(e.color));
+
+  if (noteEntries.length > 0 || flagStoolEntries.length > 0) {
+    html += '<div class="report-section">';
+    html += '<div class="report-section-title">\uD83D\uDCDD ' + t('topicsToDiscuss') + '</div>';
+
+    // Notes reverse chronological
+    const allItems = [];
+    noteEntries.forEach(e => {
+      allItems.push({ date: e.date, time: e.time, text: e.text, type: 'note' });
+    });
+    flagStoolEntries.forEach(e => {
+      const colorKey = 'color' + e.color.charAt(0).toUpperCase() + e.color.slice(1);
+      allItems.push({ date: e.date, time: e.time, text: t(colorKey) + ' stool' + (e.notes ? ' \u2014 ' + e.notes : ''), type: 'flag' });
+    });
+    allItems.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+
+    allItems.forEach(item => {
+      const prefix = item.type === 'flag' ? '\u26A0\uFE0F ' : '\u2022 ';
+      html += '<div class="report-note">' + prefix + '<span class="report-note-date">' + formatDateShort(item.date) + ':</span> ' + (item.text || '') + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Section F: Patterns & Alerts
+  const alerts = [];
+
+  // Feed volume change
+  if (feedEntries.length > 2) {
+    const midDate = new Date(sinceDate.getTime() + (now - sinceDate) / 2);
+    const firstHalfFeed = feedEntries.filter(e => new Date(e.date + 'T00:00:00') < midDate);
+    const secondHalfFeed = feedEntries.filter(e => new Date(e.date + 'T00:00:00') >= midDate);
+    const firstAvgVol = firstHalfFeed.length > 0 ? firstHalfFeed.reduce((s, e) => s + (e.volume || 0), 0) / firstHalfFeed.length : 0;
+    const secondAvgVol = secondHalfFeed.length > 0 ? secondHalfFeed.reduce((s, e) => s + (e.volume || 0), 0) / secondHalfFeed.length : 0;
+    if (firstAvgVol > 0) {
+      const changePct = Math.round(((secondAvgVol - firstAvgVol) / firstAvgVol) * 100);
+      if (Math.abs(changePct) >= 10) {
+        alerts.push(t('volumeChange') + ' ' + (changePct > 0 ? '+' : '') + changePct + '% ' + t('overPeriod'));
+      }
+    }
+  }
+
+  // Longest feeding gap
+  if (feedEntries.length > 1) {
+    const feedTs = feedEntries.map(e => getEntryTimestamp(e)).filter(Boolean).sort((a, b) => a - b);
+    let maxGap = 0, maxGapDate = '';
+    for (let i = 1; i < feedTs.length; i++) {
+      const gap = feedTs[i] - feedTs[i - 1];
+      if (gap > maxGap) { maxGap = gap; maxGapDate = feedTs[i - 1].toLocaleDateString(locale); }
+    }
+    if (maxGap > 4 * 3600000) {
+      alerts.push(t('feedGapAlert') + ' ' + formatMins(Math.round(maxGap / 60000)) + ' (' + maxGapDate + ')');
+    }
+  }
+
+  // Days with fewer than 4 feeds
+  const feedByDay = {};
+  feedEntries.forEach(e => { feedByDay[e.date] = (feedByDay[e.date] || 0) + 1; });
+  const lowFeedDayCount = Object.values(feedByDay).filter(c => c < 4).length;
+  if (lowFeedDayCount > 0) {
+    alerts.push(lowFeedDayCount + ' ' + t('lowFeedDays'));
+  }
+
+  // Flag stool colors
+  const flagColors2 = ['red', 'white', 'black'];
+  flagColors2.forEach(fc => {
+    const count = pooEntries.filter(e => e.color === fc).length;
+    if (count > 0) {
+      const colorKey = 'color' + fc.charAt(0).toUpperCase() + fc.slice(1);
+      const alertKey = fc === 'red' ? 'redStoolOn' : fc === 'white' ? 'whiteStoolOn' : 'blackStoolOn';
+      const dates = pooEntries.filter(e => e.color === fc).map(e => formatDateShort(e.date)).join(', ');
+      alerts.push(t(alertKey) + ' ' + dates);
+    }
+  });
+
+  if (alerts.length > 0) {
+    html += '<div class="report-section">';
+    html += '<div class="report-section-title">\u26A1 ' + t('patternsAlerts') + '</div>';
+    alerts.forEach(a => {
+      html += '<div class="report-alert">\u2022 ' + a + '</div>';
+    });
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function copyReport() {
+  // Generate plain text version
+  const sinceStr = document.getElementById('reportSince').value;
+  const entries = loadEntries();
+  const now = new Date();
+  const sinceDate = new Date(sinceStr + 'T00:00:00');
+  const periodEntries = entries.filter(e => {
+    const d = new Date(e.date + 'T00:00:00');
+    return d >= sinceDate && d <= now;
+  });
+
+  const name = babyProfile.name || 'Niko';
+  const ageStr = getBabyAgeStr();
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  const fromDate = sinceDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
+  const toDate = now.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
+  const totalDays = Math.max(1, Math.round((now - sinceDate) / (1000 * 60 * 60 * 24)));
+
+  let text = '\uD83D\uDC76 ' + name + (ageStr ? ' \u2014 ' + ageStr : '') + '\n';
+  text += t('reportPeriod') + ': ' + fromDate + ' \u2013 ' + toDate + '\n\n';
+
+  // Feeding
+  const feedEntries = periodEntries.filter(e => e.type === 'feed');
+  if (feedEntries.length > 0) {
+    const totalVolume = feedEntries.reduce((s, e) => s + (e.volume || 0), 0);
+    text += '\uD83C\uDF7C ' + t('feedingSummary') + '\n';
+    text += '  ' + t('avgDailyVolume') + ': ' + Math.round(totalVolume / totalDays) + ' ml\n';
+    text += '  ' + t('avgFeedsPerDay') + ': ' + (feedEntries.length / totalDays).toFixed(1) + '\n\n';
+  }
+
+  // Sleep
+  const sleepEntries = periodEntries.filter(e => e.type === 'sleep');
+  if (sleepEntries.length > 0) {
+    const totalSleepMins = sleepEntries.reduce((s, e) => s + calcSleepMins(e), 0);
+    text += '\uD83D\uDCA4 ' + t('sleepSummaryReport') + '\n';
+    text += '  ' + t('avgDailySleep') + ': ' + formatMins(Math.round(totalSleepMins / totalDays)) + '\n\n';
+  }
+
+  // Diapers
+  const pooEntries = periodEntries.filter(e => e.type === 'poo');
+  if (pooEntries.length > 0) {
+    text += '\uD83D\uDCA9 ' + t('diaperSummary') + '\n';
+    text += '  ' + t('avgPoosPerDay') + ': ' + (pooEntries.length / totalDays).toFixed(1) + '\n\n';
+  }
+
+  // Notes
+  const noteEntries = periodEntries.filter(e => e.type === 'note');
+  if (noteEntries.length > 0) {
+    text += '\uD83D\uDCDD ' + t('topicsToDiscuss') + '\n';
+    noteEntries.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    noteEntries.forEach(e => {
+      text += '  \u2022 ' + formatDateShort(e.date) + ': ' + (e.text || '') + '\n';
+    });
+  }
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(t('copied'));
+  });
+}
+
+// ═══════════════════════════════════════════════════════
 // EXPORT CSV
 // ═══════════════════════════════════════════════════════
 function exportData() {
   const entries = loadEntries();
   if (entries.length === 0) { alert(t('noDataExport')); return; }
-  const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','notes','text','createdAt'];
+  const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','color','notes','text','createdAt'];
   let csv = headers.join(',') + '\n';
   entries.forEach(e => {
     csv += headers.map(h => {
@@ -2383,7 +3329,10 @@ document.addEventListener('visibilitychange', () => {
 let timeSinceInterval;
 function startTimeSinceRefresh() {
   timeSinceInterval = setInterval(() => {
-    if (!document.hidden) renderTimeSinceLast();
+    if (!document.hidden) {
+      renderTimeSinceLast();
+      checkFeedReminder();
+    }
   }, 60000);
 }
 
@@ -2391,6 +3340,9 @@ function startTimeSinceRefresh() {
 // INIT
 // ═══════════════════════════════════════════════════════
 document.getElementById('viewDate').value = todayStr();
+// Load baby profile and feed reminder settings
+loadProfile();
+loadFeedReminder();
 // Apply saved language on load
 setLang(currentLang);
 syncFromCloud();
@@ -2398,6 +3350,7 @@ startAutoRefresh();
 startTimeSinceRefresh();
 checkSleepActive();
 renderTimeSinceLast();
+checkFeedReminder();
 </script>
 </body>
 </html>
