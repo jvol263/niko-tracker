@@ -1007,6 +1007,70 @@ body {
   margin-top: 8px;
 }
 .report-copy-btn:active { background: var(--bg); }
+
+/* Formula Timer */
+.timer-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 6px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.timer-trigger {
+  flex: 1;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 8px 6px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.timer-trigger:active { background: var(--bg); }
+.timer-trigger.active {
+  border-style: solid;
+  border-color: var(--feed);
+  color: var(--feed);
+  background: #fdf3eb;
+}
+
+.formula-timer-banner {
+  display: none;
+  color: white;
+  text-align: center;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+}
+.formula-timer-banner.active { display: flex; }
+.formula-timer-banner.timer-ok { background: var(--primary); }
+.formula-timer-banner.timer-warn { background: #d4a017; }
+.formula-timer-banner.timer-expired { background: var(--danger); animation: pulse 1.5s infinite; }
+.timer-banner-text { flex: 1; }
+.timer-dismiss-btn {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+.timer-dismiss-btn:active { background: rgba(255,255,255,0.4); }
 </style>
 </head>
 <body>
@@ -1033,6 +1097,15 @@ body {
 
 <div class="poo-reminder-banner" id="pooReminderBanner" onclick="openModal('poo')">
   &#x1F4A9; It's been <span id="pooReminderTime"></span> since last poo
+</div>
+
+<div class="formula-timer-banner" id="bottleTimerBanner">
+  <span class="timer-banner-text" id="bottleTimerText"></span>
+  <button class="timer-dismiss-btn" onclick="clearBottleTimer()">&#x2716;</button>
+</div>
+<div class="formula-timer-banner" id="feedTimerBanner">
+  <span class="timer-banner-text" id="feedTimerText"></span>
+  <button class="timer-dismiss-btn" onclick="clearFeedTimer()">&#x2716;</button>
 </div>
 
 <!-- Sync status -->
@@ -1077,6 +1150,16 @@ body {
     <div class="tsl-value poo-color" id="tslPoo">--</div>
     <div class="tsl-sub" id="tslPooSub"></div>
   </div>
+</div>
+
+<!-- Formula Timer Triggers -->
+<div class="timer-row">
+  <button class="timer-trigger" id="bottleTimerTrigger" onclick="toggleBottleTimer()">
+    <span>&#x1F37C;</span> <span id="bottleTimerLabel">Bottle Made</span>
+  </button>
+  <button class="timer-trigger" id="feedTimerTrigger" onclick="toggleFeedTimer()">
+    <span>&#x23F1;&#xFE0F;</span> <span id="feedTimerLabel">Feeding Started</span>
+  </button>
 </div>
 
 <!-- Date nav for viewing entries -->
@@ -1916,7 +1999,15 @@ const i18n = {
     pooReminder: 'Poo Reminder',
     pooReminderOff: 'Off',
     pooReminderBanner: "It's been {time} since last poo",
-    defaultFeedType: 'Default Feed Type'
+    defaultFeedType: 'Default Feed Type',
+    // Formula timer
+    bottleMade: 'Bottle Made',
+    feedingStarted: 'Feeding Started',
+    bottleTimerMsg: 'Bottle made {elapsed} ago — {remaining} left',
+    feedTimerMsg: 'Feeding started {elapsed} ago — {remaining} left',
+    bottleExpired: 'Bottle expired! Discard formula',
+    feedExpired: 'Feed expired! Discard remaining milk',
+    timerStarted: 'Timer started'
   },
   ja: {
     appTitle: 'ニコトラッカー',
@@ -2097,7 +2188,15 @@ const i18n = {
     pooReminder: 'うんちリマインダー',
     pooReminderOff: 'オフ',
     pooReminderBanner: '最後のうんちから{time}経ちました',
-    defaultFeedType: 'デフォルトミルク種類'
+    defaultFeedType: 'デフォルトミルク種類',
+    // Formula timer
+    bottleMade: 'ミルク作った',
+    feedingStarted: '授乳開始',
+    bottleTimerMsg: 'ミルク作って{elapsed} — 残り{remaining}',
+    feedTimerMsg: '授乳開始{elapsed} — 残り{remaining}',
+    bottleExpired: 'ミルク期限切れ！破棄してください',
+    feedExpired: '授乳期限切れ！残りは破棄してください',
+    timerStarted: 'タイマー開始'
   }
 };
 
@@ -2172,6 +2271,11 @@ function applyLang() {
   document.getElementById('optDefFormula').textContent = t('formula');
   document.getElementById('optDefBreast').textContent = t('breastMilk');
   document.getElementById('optDefMixed').textContent = t('mixed');
+
+  // Formula timer labels
+  document.getElementById('bottleTimerLabel').textContent = t('bottleMade');
+  document.getElementById('feedTimerLabel').textContent = t('feedingStarted');
+  updateFormulaTimers();
 
   // Stool color label
   document.getElementById('labelPooColor').textContent = t('pooColor');
@@ -3257,6 +3361,127 @@ function loadDefaultFeedType() {
 }
 
 // ═══════════════════════════════════════════════════════
+// FORMULA / FEEDING TIMERS
+// ═══════════════════════════════════════════════════════
+const BOTTLE_LIMIT_MS = 2 * 60 * 60 * 1000;   // 2 hours
+const FEED_LIMIT_MS = 1 * 60 * 60 * 1000;     // 1 hour
+const BOTTLE_WARN_MS = 30 * 60 * 1000;         // warn at 30 min left
+const FEED_WARN_MS = 15 * 60 * 1000;           // warn at 15 min left
+
+function toggleBottleTimer() {
+  const existing = localStorage.getItem('niko_bottle_timer');
+  if (existing) {
+    clearBottleTimer();
+  } else {
+    localStorage.setItem('niko_bottle_timer', Date.now().toString());
+    showToast(t('timerStarted') + ' (2h)');
+    updateFormulaTimers();
+  }
+}
+
+function toggleFeedTimer() {
+  const existing = localStorage.getItem('niko_feed_timer');
+  if (existing) {
+    clearFeedTimer();
+  } else {
+    localStorage.setItem('niko_feed_timer', Date.now().toString());
+    showToast(t('timerStarted') + ' (1h)');
+    updateFormulaTimers();
+  }
+}
+
+function clearBottleTimer() {
+  localStorage.removeItem('niko_bottle_timer');
+  updateFormulaTimers();
+}
+
+function clearFeedTimer() {
+  localStorage.removeItem('niko_feed_timer');
+  updateFormulaTimers();
+}
+
+function formatTimerDuration(ms) {
+  const totalMins = Math.floor(ms / 60000);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (currentLang === 'ja') {
+    if (hrs > 0) return hrs + '時間' + (mins > 0 ? mins + '分' : '');
+    return mins + '分';
+  }
+  if (hrs > 0) return hrs + 'h ' + (mins > 0 ? mins + 'm' : '');
+  return mins + 'm';
+}
+
+function updateFormulaTimers() {
+  const now = Date.now();
+
+  // --- Bottle timer ---
+  const bottleStart = localStorage.getItem('niko_bottle_timer');
+  const bottleBanner = document.getElementById('bottleTimerBanner');
+  const bottleTrigger = document.getElementById('bottleTimerTrigger');
+
+  if (bottleStart) {
+    const elapsed = now - parseInt(bottleStart);
+    const remaining = BOTTLE_LIMIT_MS - elapsed;
+    bottleTrigger.classList.add('active');
+
+    if (remaining <= 0) {
+      // Expired
+      bottleBanner.className = 'formula-timer-banner active timer-expired';
+      document.getElementById('bottleTimerText').innerHTML = '&#x26A0;&#xFE0F; ' + t('bottleExpired');
+    } else {
+      const cls = remaining <= BOTTLE_WARN_MS ? 'timer-warn' : 'timer-ok';
+      bottleBanner.className = 'formula-timer-banner active ' + cls;
+      const msg = t('bottleTimerMsg')
+        .replace('{elapsed}', formatTimerDuration(elapsed))
+        .replace('{remaining}', formatTimerDuration(remaining));
+      document.getElementById('bottleTimerText').innerHTML = '&#x1F37C; ' + msg;
+    }
+    bottleBanner.classList.add('active');
+  } else {
+    bottleBanner.classList.remove('active');
+    bottleBanner.className = 'formula-timer-banner';
+    bottleTrigger.classList.remove('active');
+  }
+
+  // --- Feed timer ---
+  const feedStart = localStorage.getItem('niko_feed_timer');
+  const feedBanner = document.getElementById('feedTimerBanner');
+  const feedTrigger = document.getElementById('feedTimerTrigger');
+
+  if (feedStart) {
+    const elapsed = now - parseInt(feedStart);
+    const remaining = FEED_LIMIT_MS - elapsed;
+    feedTrigger.classList.add('active');
+
+    if (remaining <= 0) {
+      feedBanner.className = 'formula-timer-banner active timer-expired';
+      document.getElementById('feedTimerText').innerHTML = '&#x26A0;&#xFE0F; ' + t('feedExpired');
+    } else {
+      const cls = remaining <= FEED_WARN_MS ? 'timer-warn' : 'timer-ok';
+      feedBanner.className = 'formula-timer-banner active ' + cls;
+      const msg = t('feedTimerMsg')
+        .replace('{elapsed}', formatTimerDuration(elapsed))
+        .replace('{remaining}', formatTimerDuration(remaining));
+      document.getElementById('feedTimerText').innerHTML = '&#x23F1;&#xFE0F; ' + msg;
+    }
+    feedBanner.classList.add('active');
+  } else {
+    feedBanner.classList.remove('active');
+    feedBanner.className = 'formula-timer-banner';
+    feedTrigger.classList.remove('active');
+  }
+}
+
+// Update formula timers every 15 seconds for responsive countdown
+let formulaTimerInterval;
+function startFormulaTimerRefresh() {
+  formulaTimerInterval = setInterval(() => {
+    if (!document.hidden) updateFormulaTimers();
+  }, 15000);
+}
+
+// ═══════════════════════════════════════════════════════
 // DOCTOR VISIT REPORT
 // ═══════════════════════════════════════════════════════
 function openDoctorReport() {
@@ -3650,6 +3875,8 @@ checkSleepActive();
 renderTimeSinceLast();
 checkFeedReminder();
 checkPooReminder();
+updateFormulaTimers();
+startFormulaTimerRefresh();
 </script>
 </body>
 </html>
