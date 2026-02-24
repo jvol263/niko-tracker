@@ -2867,6 +2867,8 @@ function switchSummaryTab(tab) {
   document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
   document.getElementById('tabWeekly').classList.toggle('active', tab === 'weekly');
 
+  // Hide date nav for 24h (it's always "right now"), show for daily/weekly
+  document.getElementById('summaryDateNav').style.display = tab === '24h' ? 'none' : 'flex';
   updateSummaryDateLabel();
 
   const body = document.getElementById('summaryBody');
@@ -2874,14 +2876,12 @@ function switchSummaryTab(tab) {
 
   if (tab === '24h') {
     document.getElementById('summaryTitle').textContent = t('last24Hours');
-    // Use end of selected day as the anchor (or now if today)
-    const isToday = summaryDate === todayStr();
-    const endTime = isToday ? new Date() : new Date(summaryDate + 'T23:59:59');
-    const cutoff = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const recentEntries = entries.filter(e => {
       const ts = getEntryTimestamp(e);
-      return ts && ts >= cutoff && ts <= endTime;
+      return ts && ts >= cutoff && ts <= now;
     });
 
     const stats = calcDayStats(recentEntries);
@@ -2898,9 +2898,8 @@ function switchSummaryTab(tab) {
       '<span class="stat-value sleep-color">' + formatMins(longestSleepMins) + '</span>' +
     '</div>';
 
-    // Only show "since last" stats if viewing today
-    if (isToday) {
-      const now = new Date();
+    // Since last feed/poo (always real-time for 24h tab)
+    {
       let lastFeedAgo = '--';
       let lastFeedTime = null;
       entries.filter(e => e.type === 'feed').forEach(e => {
