@@ -379,6 +379,34 @@ body {
 }
 .summary-tab.active { background: white; color: var(--text); box-shadow: var(--shadow); }
 
+.summary-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.summary-date-nav button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.summary-date-nav button:active { background: var(--border); }
+.summary-date-nav span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 140px;
+  text-align: center;
+}
+
 .summary-stat {
   display: flex;
   justify-content: space-between;
@@ -1391,6 +1419,11 @@ body {
       <button class="summary-tab" id="tab24h" onclick="switchSummaryTab('24h')"><span id="tab24hLabel">24h</span></button>
       <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')"><span id="tabDailyLabel">Daily</span></button>
       <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')"><span id="tabWeeklyLabel">Weekly</span></button>
+    </div>
+    <div class="summary-date-nav" id="summaryDateNav">
+      <button onclick="shiftSummaryDate(-1)">&#8592;</button>
+      <span id="summaryDateLabel"></span>
+      <button onclick="shiftSummaryDate(1)">&#8594;</button>
     </div>
     <div id="summaryBody"></div>
   </div>
@@ -2779,82 +2812,129 @@ function shiftDate(n) {
 // ═══════════════════════════════════════════════════════
 // SUMMARY
 // ═══════════════════════════════════════════════════════
+let summaryDate = todayStr();
+let currentSummaryTab = '24h';
+
 function openSummary(tab) {
+  summaryDate = todayStr();
   document.getElementById('summaryOverlay').classList.add('active');
   switchSummaryTab(tab);
 }
 function closeSummary() { document.getElementById('summaryOverlay').classList.remove('active'); }
 function closeSummaryBg(e) { if (e.target === document.getElementById('summaryOverlay')) closeSummary(); }
 
+function shiftSummaryDate(n) {
+  let newDate;
+  if (currentSummaryTab === 'weekly') {
+    newDate = addDays(summaryDate, n * 7);
+  } else {
+    newDate = addDays(summaryDate, n);
+  }
+  // Don't navigate into the future
+  if (newDate > todayStr()) newDate = todayStr();
+  summaryDate = newDate;
+  switchSummaryTab(currentSummaryTab);
+}
+
+function updateSummaryDateLabel() {
+  const label = document.getElementById('summaryDateLabel');
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  if (currentSummaryTab === 'weekly') {
+    const ws = getWeekStart(summaryDate);
+    const we = addDays(ws, 6);
+    const wsDate = new Date(ws + 'T00:00:00');
+    const weDate = new Date(we + 'T00:00:00');
+    label.textContent = wsDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
+      ' \u2013 ' + weDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  } else {
+    label.textContent = formatDateShort(summaryDate);
+  }
+  // Disable forward arrow if at today
+  const navBtns = document.querySelectorAll('#summaryDateNav button');
+  if (navBtns.length >= 2) {
+    const fwdBtn = navBtns[1];
+    const atPresent = (currentSummaryTab === 'weekly')
+      ? getWeekStart(summaryDate) === getWeekStart(todayStr())
+      : summaryDate >= todayStr();
+    fwdBtn.disabled = atPresent;
+    fwdBtn.style.opacity = atPresent ? '0.3' : '1';
+  }
+}
+
 function switchSummaryTab(tab) {
+  currentSummaryTab = tab;
   document.getElementById('tab24h').classList.toggle('active', tab === '24h');
   document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
   document.getElementById('tabWeekly').classList.toggle('active', tab === 'weekly');
 
+  updateSummaryDateLabel();
+
   const body = document.getElementById('summaryBody');
   const entries = loadEntries();
-  const dateStr = document.getElementById('viewDate').value;
 
   if (tab === '24h') {
     document.getElementById('summaryTitle').textContent = t('last24Hours');
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // Use end of selected day as the anchor (or now if today)
+    const isToday = summaryDate === todayStr();
+    const endTime = isToday ? new Date() : new Date(summaryDate + 'T23:59:59');
+    const cutoff = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
 
-    // Filter entries within the last 24 hours
     const recentEntries = entries.filter(e => {
       const ts = getEntryTimestamp(e);
-      return ts && ts >= cutoff && ts <= now;
+      return ts && ts >= cutoff && ts <= endTime;
     });
 
     const stats = calcDayStats(recentEntries);
 
-    // Find longest single sleep stretch in the 24h window
     let longestSleepMins = 0;
     recentEntries.filter(e => e.type === 'sleep').forEach(e => {
       const mins = calcSleepMins(e);
       if (mins > longestSleepMins) longestSleepMins = mins;
     });
 
-    // Time since last feed
-    let lastFeedAgo = '--';
-    let lastFeedTime = null;
-    entries.filter(e => e.type === 'feed').forEach(e => {
-      const ts = getEntryTimestamp(e);
-      if (ts && (!lastFeedTime || ts > lastFeedTime)) lastFeedTime = ts;
-    });
-    if (lastFeedTime) lastFeedAgo = formatTimeSince(now - lastFeedTime);
-
-    // Time since last poo
-    let lastPooAgo = '--';
-    let lastPooTime = null;
-    entries.filter(e => e.type === 'poo').forEach(e => {
-      const ts = getEntryTimestamp(e);
-      if (ts && (!lastPooTime || ts > lastPooTime)) lastPooTime = ts;
-    });
-    if (lastPooTime) lastPooAgo = formatTimeSince(now - lastPooTime);
-
     let html = renderDayStats(stats);
     html += '<div class="summary-stat">' +
       '<span class="stat-label">&#x1F4A4; ' + t('longestSleepStretch') + '</span>' +
       '<span class="stat-value sleep-color">' + formatMins(longestSleepMins) + '</span>' +
     '</div>';
-    html += '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F37C; ' + t('sinceLastFeed') + '</span>' +
-      '<span class="stat-value feed-color">' + lastFeedAgo + '</span>' +
-    '</div>';
-    html += '<div class="summary-stat">' +
-      '<span class="stat-label">&#x1F4A9; ' + t('sinceLastPoo') + '</span>' +
-      '<span class="stat-value poo-color">' + lastPooAgo + '</span>' +
-    '</div>';
+
+    // Only show "since last" stats if viewing today
+    if (isToday) {
+      const now = new Date();
+      let lastFeedAgo = '--';
+      let lastFeedTime = null;
+      entries.filter(e => e.type === 'feed').forEach(e => {
+        const ts = getEntryTimestamp(e);
+        if (ts && (!lastFeedTime || ts > lastFeedTime)) lastFeedTime = ts;
+      });
+      if (lastFeedTime) lastFeedAgo = formatTimeSince(now - lastFeedTime);
+
+      let lastPooAgo = '--';
+      let lastPooTime = null;
+      entries.filter(e => e.type === 'poo').forEach(e => {
+        const ts = getEntryTimestamp(e);
+        if (ts && (!lastPooTime || ts > lastPooTime)) lastPooTime = ts;
+      });
+      if (lastPooTime) lastPooAgo = formatTimeSince(now - lastPooTime);
+
+      html += '<div class="summary-stat">' +
+        '<span class="stat-label">&#x1F37C; ' + t('sinceLastFeed') + '</span>' +
+        '<span class="stat-value feed-color">' + lastFeedAgo + '</span>' +
+      '</div>';
+      html += '<div class="summary-stat">' +
+        '<span class="stat-label">&#x1F4A9; ' + t('sinceLastPoo') + '</span>' +
+        '<span class="stat-value poo-color">' + lastPooAgo + '</span>' +
+      '</div>';
+    }
     body.innerHTML = html;
 
   } else if (tab === 'daily') {
-    document.getElementById('summaryTitle').textContent = t('dailySummary') + ' \u2014 ' + formatDateShort(dateStr);
-    const dayEntries = entries.filter(e => e.date === dateStr);
+    document.getElementById('summaryTitle').textContent = t('dailySummary');
+    const dayEntries = entries.filter(e => e.date === summaryDate);
     const stats = calcDayStats(dayEntries);
     body.innerHTML = renderDayStats(stats);
   } else {
-    const weekStart = getWeekStart(dateStr);
+    const weekStart = getWeekStart(summaryDate);
     document.getElementById('summaryTitle').textContent = t('weeklySummary');
     let html = '<div class="summary-day-list">';
     html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('sleepCol') + '</span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
