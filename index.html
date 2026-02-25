@@ -424,12 +424,14 @@ body {
 .summary-day-list { margin-top: 12px; }
 .summary-day-row {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: 72px 1fr 1fr 1fr 40px;
+  gap: 4px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  text-align: center;
 }
+.summary-day-row > span:first-child { text-align: left; }
 .summary-day-row.header { font-weight: 700; color: var(--text); text-transform: uppercase; font-size: 11px; background: var(--bg); border-radius: 6px; padding: 8px 4px; }
 
 /* Trends Modal / Overlay */
@@ -1910,6 +1912,8 @@ const i18n = {
     tabDaily: 'Daily',
     tabWeekly: 'Weekly',
     totalSleep: 'Total Sleep',
+    nightSleep: 'Night Sleep',
+    daySleep: 'Day Sleep',
     totalFeedVolume: 'Total Feed Volume',
     numberOfFeedings: 'Number of Feedings',
     pooCount: 'Poo Count',
@@ -1918,6 +1922,8 @@ const i18n = {
     sinceLastPoo: 'Since Last Poo',
     // Weekly table
     dayCol: 'Day',
+    nightCol: '\ud83c\udf19',
+    dayCol2: '\u2600\ufe0f',
     sleepCol: 'Sleep',
     feedCol: 'Feed',
     pooCol: 'Poo',
@@ -2107,6 +2113,8 @@ const i18n = {
     tabDaily: '日次',
     tabWeekly: '週次',
     totalSleep: '合計睡眠',
+    nightSleep: '夜間睡眠',
+    daySleep: '昼間睡眠',
     totalFeedVolume: '合計ミルク量',
     numberOfFeedings: 'ミルク回数',
     pooCount: 'うんち回数',
@@ -2114,6 +2122,8 @@ const i18n = {
     sinceLastFeed: '最後のミルクから',
     sinceLastPoo: '最後のうんちから',
     dayCol: '日',
+    nightCol: '\ud83c\udf19',
+    dayCol2: '\u2600\ufe0f',
     sleepCol: 'ねんね',
     feedCol: 'ミルク',
     pooCol: 'うんち',
@@ -2708,6 +2718,53 @@ function calcSleepMins(e) {
   return endMins - startMins;
 }
 
+// Returns minutes of a sleep entry that overlap with a given time range (ms timestamps)
+function calcSleepMinsInRange(e, rangeStartMs, rangeEndMs) {
+  if (!e.sleepStart || !e.sleepEnd) return 0;
+  const startDt = new Date(e.date + 'T' + e.sleepStart + ':00');
+  const endDate = e.sleepEndDate || e.date;
+  let endDt = new Date(endDate + 'T' + e.sleepEnd + ':00');
+  if (endDt <= startDt) endDt = new Date(endDt.getTime() + 24 * 60 * 60 * 1000);
+  const overlapStart = Math.max(startDt.getTime(), rangeStartMs);
+  const overlapEnd = Math.min(endDt.getTime(), rangeEndMs);
+  return overlapEnd > overlapStart ? Math.round((overlapEnd - overlapStart) / 60000) : 0;
+}
+
+// Accurate day stats: splits sleep across midnight, calculates night/day breakdown
+// Night = previous day 19:00 → this day 07:00, Day = this day 07:00 → 19:00
+function calcDayStatsAccurate(allEntries, dateStr) {
+  const dayStartMs = new Date(dateStr + 'T00:00:00').getTime();
+  const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
+  const nightStartMs = dayStartMs - 5 * 60 * 60 * 1000;  // prev day 19:00
+  const nightEndMs = dayStartMs + 7 * 60 * 60 * 1000;     // this day 07:00
+  const dayPeriodStartMs = dayStartMs + 7 * 60 * 60 * 1000; // 07:00
+  const dayPeriodEndMs = dayStartMs + 19 * 60 * 60 * 1000;  // 19:00
+
+  // Find all sleep entries that could overlap with this date (or its night window)
+  const prevDate = addDays(dateStr, -1);
+  const sleepEntries = allEntries.filter(e => {
+    if (e.type !== 'sleep' || !e.sleepStart || !e.sleepEnd) return false;
+    return e.date === dateStr || e.date === prevDate ||
+           e.sleepEndDate === dateStr || e.sleepEndDate === prevDate;
+  });
+
+  let sleepMins = 0, nightSleepMins = 0, daySleepMins = 0;
+  sleepEntries.forEach(e => {
+    sleepMins += calcSleepMinsInRange(e, dayStartMs, dayEndMs);
+    nightSleepMins += calcSleepMinsInRange(e, nightStartMs, nightEndMs);
+    daySleepMins += calcSleepMinsInRange(e, dayPeriodStartMs, dayPeriodEndMs);
+  });
+
+  let feedMl = 0, feedCount = 0, pooCount = 0;
+  allEntries.forEach(e => {
+    if (e.date !== dateStr) return;
+    if (e.type === 'feed') { feedCount++; feedMl += (e.volume || 0); }
+    if (e.type === 'poo') pooCount++;
+  });
+
+  return { sleepMins, nightSleepMins, daySleepMins, feedMl, feedCount, pooCount };
+}
+
 // ═══════════════════════════════════════════════════════
 // TIME SINCE LAST
 // ═══════════════════════════════════════════════════════
@@ -2878,20 +2935,30 @@ function switchSummaryTab(tab) {
     document.getElementById('summaryTitle').textContent = t('last24Hours');
     const now = new Date();
     const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const nowMs = now.getTime();
+    const cutoffMs = cutoff.getTime();
 
     const recentEntries = entries.filter(e => {
       const ts = getEntryTimestamp(e);
       return ts && ts >= cutoff && ts <= now;
     });
 
-    const stats = calcDayStats(recentEntries);
-
-    let longestSleepMins = 0;
+    // Accurate sleep: clip to 24h window using range function
+    let sleepMins = 0, longestSleepMins = 0;
     recentEntries.filter(e => e.type === 'sleep').forEach(e => {
-      const mins = calcSleepMins(e);
+      const mins = calcSleepMinsInRange(e, cutoffMs, nowMs);
+      sleepMins += mins;
       if (mins > longestSleepMins) longestSleepMins = mins;
     });
 
+    // Feed/poo are point-in-time, no clipping needed
+    let feedMl = 0, feedCount = 0, pooCount = 0;
+    recentEntries.forEach(e => {
+      if (e.type === 'feed') { feedCount++; feedMl += (e.volume || 0); }
+      if (e.type === 'poo') pooCount++;
+    });
+
+    const stats = { sleepMins, feedMl, feedCount, pooCount };
     let html = renderDayStats(stats);
     html += '<div class="summary-stat">' +
       '<span class="stat-label">&#x1F4A4; ' + t('longestSleepStretch') + '</span>' +
@@ -2929,20 +2996,19 @@ function switchSummaryTab(tab) {
 
   } else if (tab === 'daily') {
     document.getElementById('summaryTitle').textContent = t('dailySummary');
-    const dayEntries = entries.filter(e => e.date === summaryDate);
-    const stats = calcDayStats(dayEntries);
+    const stats = calcDayStatsAccurate(entries, summaryDate);
     body.innerHTML = renderDayStats(stats);
   } else {
     const weekStart = getWeekStart(summaryDate);
     document.getElementById('summaryTitle').textContent = t('weeklySummary');
     let html = '<div class="summary-day-list">';
-    html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('sleepCol') + '</span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
-    let totals = { sleepMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
+    html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('nightCol') + '</span><span>' + t('dayCol2') + '</span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
+    let totals = { nightMins: 0, dayMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
     for (let i = 0; i < 7; i++) {
       const d = addDays(weekStart, i);
-      const dayEntries = entries.filter(e => e.date === d);
-      const stats = calcDayStats(dayEntries);
-      totals.sleepMins += stats.sleepMins;
+      const stats = calcDayStatsAccurate(entries, d);
+      totals.nightMins += stats.nightSleepMins;
+      totals.dayMins += stats.daySleepMins;
       totals.feedMl += stats.feedMl;
       totals.feedCount += stats.feedCount;
       totals.pooCount += stats.pooCount;
@@ -2951,20 +3017,23 @@ function switchSummaryTab(tab) {
       const isToday = d === todayStr();
       html += '<div class="summary-day-row"' + (isToday ? ' style="font-weight:600;background:var(--bg);border-radius:6px;padding:8px 4px"' : '') + '>' +
         '<span>' + dayName + '</span>' +
-        '<span>' + formatMins(stats.sleepMins) + '</span>' +
+        '<span>' + formatMins(stats.nightSleepMins) + '</span>' +
+        '<span>' + formatMins(stats.daySleepMins) + '</span>' +
         '<span>' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
         '<span>' + stats.pooCount + '</span>' +
       '</div>';
     }
     html += '<div class="summary-day-row" style="font-weight:700;border-top:2px solid var(--text)">' +
       '<span>' + t('total') + '</span>' +
-      '<span>' + formatMins(totals.sleepMins) + '</span>' +
+      '<span>' + formatMins(totals.nightMins) + '</span>' +
+      '<span>' + formatMins(totals.dayMins) + '</span>' +
       '<span>' + (totals.feedMl > 0 ? totals.feedMl + ' ml' : '-') + '</span>' +
       '<span>' + totals.pooCount + '</span>' +
     '</div>';
     html += '<div class="summary-day-row" style="color:var(--text-light)">' +
       '<span>' + t('avgPerDay') + '</span>' +
-      '<span>' + formatMins(Math.round(totals.sleepMins / 7)) + '</span>' +
+      '<span>' + formatMins(Math.round(totals.nightMins / 7)) + '</span>' +
+      '<span>' + formatMins(Math.round(totals.dayMins / 7)) + '</span>' +
       '<span>' + (totals.feedMl > 0 ? Math.round(totals.feedMl / 7) + ' ml' : '-') + '</span>' +
       '<span>' + (totals.pooCount / 7).toFixed(1) + '</span>' +
     '</div>';
@@ -2991,11 +3060,22 @@ function formatMins(m) {
 }
 
 function renderDayStats(stats) {
-  return '<div class="summary-stat">' +
+  let html = '<div class="summary-stat">' +
       '<span class="stat-label">&#x1F4A4; ' + t('totalSleep') + '</span>' +
       '<span class="stat-value sleep-color">' + formatMins(stats.sleepMins) + '</span>' +
-    '</div>' +
-    '<div class="summary-stat">' +
+    '</div>';
+  // Night/day breakdown if available
+  if (stats.nightSleepMins !== undefined) {
+    html += '<div class="summary-stat" style="padding-left:24px;font-size:14px">' +
+        '<span class="stat-label">&#x1F319; ' + t('nightSleep') + '</span>' +
+        '<span class="stat-value sleep-color">' + formatMins(stats.nightSleepMins) + '</span>' +
+      '</div>' +
+      '<div class="summary-stat" style="padding-left:24px;font-size:14px">' +
+        '<span class="stat-label">&#x2600;&#xFE0F; ' + t('daySleep') + '</span>' +
+        '<span class="stat-value sleep-color">' + formatMins(stats.daySleepMins) + '</span>' +
+      '</div>';
+  }
+  html += '<div class="summary-stat">' +
       '<span class="stat-label">&#x1F37C; ' + t('totalFeedVolume') + '</span>' +
       '<span class="stat-value feed-color">' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
     '</div>' +
@@ -3007,6 +3087,7 @@ function renderDayStats(stats) {
       '<span class="stat-label">&#x1F4A9; ' + t('pooCount') + '</span>' +
       '<span class="stat-value poo-color">' + stats.pooCount + '</span>' +
     '</div>';
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════
