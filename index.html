@@ -368,14 +368,15 @@ body {
 }
 .summary-tab {
   flex: 1;
-  padding: 10px;
+  padding: 8px 2px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   background: transparent;
   color: var(--text-light);
   cursor: pointer;
+  font-family: inherit;
 }
 .summary-tab.active { background: white; color: var(--text); box-shadow: var(--shadow); }
 
@@ -433,6 +434,39 @@ body {
 }
 .summary-day-row > span:first-child { text-align: left; }
 .summary-day-row.header { font-weight: 700; color: var(--text); text-transform: uppercase; font-size: 11px; background: var(--bg); border-radius: 6px; padding: 8px 4px; }
+.col-hint { display: block; font-size: 9px; font-weight: 400; color: var(--text-light); text-transform: none; }
+
+/* Note tags */
+.note-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.note-tag-btn {
+  padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;
+  border: 2px solid var(--border); background: transparent; color: var(--text-light);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.note-tag-btn.active-question { border-color: var(--sleep); background: rgba(123,161,199,0.15); color: var(--sleep); }
+.note-tag-btn.active-concern { border-color: #d4a017; background: rgba(212,160,23,0.15); color: #b8860b; }
+.note-tag-btn.active-milestone { border-color: var(--primary); background: rgba(107,143,113,0.15); color: var(--primary); }
+.entry-tag {
+  display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; margin-left: 6px; vertical-align: middle;
+}
+.entry-tag.tag-question { background: rgba(123,161,199,0.2); color: var(--sleep); }
+.entry-tag.tag-concern { background: rgba(212,160,23,0.2); color: #b8860b; }
+.entry-tag.tag-milestone { background: rgba(107,143,113,0.2); color: var(--primary); }
+
+/* Default poo color mini picker */
+.poo-color-mini { display: flex; gap: 6px; align-items: center; }
+.poo-color-mini .color-opt {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; padding: 0;
+}
+.poo-color-mini .color-opt.selected { border-color: var(--text); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--text); }
+
+/* Trend legend */
+.trend-legend { display: flex; gap: 12px; justify-content: center; margin: 4px 0 8px; font-size: 11px; color: var(--text-light); }
+.trend-legend-item { display: flex; align-items: center; gap: 4px; }
+.trend-legend-swatch { width: 12px; height: 12px; border-radius: 2px; }
+.trend-legend-line { width: 16px; height: 2px; }
 
 /* Trends Modal / Overlay */
 .trends-overlay {
@@ -1265,6 +1299,17 @@ body {
             <option value="mixed" id="optDefMixed">Mixed</option>
           </select>
         </div>
+        <div class="setting-row">
+          <label id="defaultPooColorLabel">Default Poo Color</label>
+          <div class="poo-color-mini" id="defaultPooColorPicker">
+            <button type="button" class="color-opt" data-color="yellow" style="background:#F0D060" onclick="saveDefaultPooColor('yellow')"></button>
+            <button type="button" class="color-opt" data-color="green" style="background:#7BAF5E" onclick="saveDefaultPooColor('green')"></button>
+            <button type="button" class="color-opt selected" data-color="brown" style="background:#8B6914" onclick="saveDefaultPooColor('brown')"></button>
+            <button type="button" class="color-opt" data-color="red" style="background:#D9534F" onclick="saveDefaultPooColor('red')"></button>
+            <button type="button" class="color-opt" data-color="white" style="background:#F5F5F5;border:1px solid #ccc" onclick="saveDefaultPooColor('white')"></button>
+            <button type="button" class="color-opt" data-color="black" style="background:#333" onclick="saveDefaultPooColor('black')"></button>
+          </div>
+        </div>
       </div>
 
       <!-- Data -->
@@ -1280,7 +1325,7 @@ body {
 <!-- Bottom nav -->
 <div class="bottom-nav">
   <button class="nav-btn" onclick="openSummary('24h')">
-    &#x1F4CA; <span id="navLabelSummaries">Summaries</span>
+    &#x1F4CA; <span id="navLabelTotals">Totals</span>
   </button>
   <button class="nav-btn" onclick="openTrends()">
     &#x1F4C8; <span id="navLabelTrends">Trends</span>
@@ -1402,6 +1447,12 @@ body {
         <div class="form-group">
           <label id="labelNote">Note</label>
           <textarea id="noteText" placeholder="Anything to remember..."></textarea>
+          <div class="note-tags" id="noteTagPicker">
+            <button type="button" class="note-tag-btn" data-tag="question" onclick="setNoteTag('question')"><span id="tagQuestionLabel">Question</span></button>
+            <button type="button" class="note-tag-btn" data-tag="concern" onclick="setNoteTag('concern')"><span id="tagConcernLabel">Concern</span></button>
+            <button type="button" class="note-tag-btn" data-tag="milestone" onclick="setNoteTag('milestone')"><span id="tagMilestoneLabel">Milestone</span></button>
+          </div>
+          <input type="hidden" id="noteTag" value="">
         </div>
       </div>
 
@@ -1419,7 +1470,8 @@ body {
     </div>
     <div class="summary-tabs">
       <button class="summary-tab" id="tab24h" onclick="switchSummaryTab('24h')"><span id="tab24hLabel">24h</span></button>
-      <button class="summary-tab active" id="tabDaily" onclick="switchSummaryTab('daily')"><span id="tabDailyLabel">Daily</span></button>
+      <button class="summary-tab" id="tabNight" onclick="switchSummaryTab('night')"><span id="tabNightLabel">Night</span></button>
+      <button class="summary-tab active" id="tabToday" onclick="switchSummaryTab('today')"><span id="tabTodayLabel">Today</span></button>
       <button class="summary-tab" id="tabWeekly" onclick="switchSummaryTab('weekly')"><span id="tabWeeklyLabel">Weekly</span></button>
     </div>
     <div class="summary-date-nav" id="summaryDateNav">
@@ -1906,14 +1958,18 @@ const i18n = {
     deleteConfirm: 'Delete this entry?',
     // Summary
     last24Hours: 'Last 24 Hours',
-    dailySummary: 'Daily Summary',
+    lastNightSummary: 'Last Night',
+    todaySummary: 'Today',
     weeklySummary: 'Weekly Summary',
     tab24h: '24h',
-    tabDaily: 'Daily',
+    tabNight: 'Night',
+    tabToday: 'Today',
     tabWeekly: 'Weekly',
     totalSleep: 'Total Sleep',
-    nightSleep: 'Night Sleep',
-    daySleep: 'Day Sleep',
+    totalNightSleep: 'Total Night Sleep',
+    nightFeeds: 'Night Feeds',
+    nightPoos: 'Night Poos',
+    wakeUps: 'Wake-ups',
     totalFeedVolume: 'Total Feed Volume',
     numberOfFeedings: 'Number of Feedings',
     pooCount: 'Poo Count',
@@ -1924,6 +1980,8 @@ const i18n = {
     dayCol: 'Day',
     nightCol: '\ud83c\udf19',
     dayCol2: '\u2600\ufe0f',
+    nightColHint: '7p\u20137a',
+    dayColHint: '7a\u20137p',
     sleepCol: 'Sleep',
     feedCol: 'Feed',
     pooCol: 'Poo',
@@ -1932,7 +1990,10 @@ const i18n = {
     // Trends
     trends14Days: 'Trends (14 Days)',
     dailySleepHours: 'Daily Sleep (hours)',
-    dailyFeedVolumeMl: 'Daily Feed Volume (ml)',
+    dailyFeedVolumeMl: 'Daily Feed Volume \u2014 ml (12am\u201312am)',
+    nightSleepLabel: 'Night (7p\u20137a)',
+    daySleepLabel: 'Day (7a\u20137p)',
+    pctNightLabel: '% Night',
     longestSleep: 'Longest Sleep',
     avgFeedGap: 'Avg Feed Gap',
     pooFrequency: 'Poo Frequency',
@@ -1963,9 +2024,17 @@ const i18n = {
     exportCsv: 'Export CSV',
     noDataExport: 'No data to export.',
     // Nav buttons
-    navSummaries: 'Summaries',
+    navTotals: 'Totals',
     navTrends: 'Trends',
     navReport: 'Report',
+    // Note tags
+    tagQuestion: 'Question',
+    tagConcern: 'Concern',
+    tagMilestone: 'Milestone',
+    questionsSection: 'Questions for Doctor',
+    concernsSection: 'Concerns',
+    milestonesSection: 'Milestones',
+    otherNotesSection: 'Other Notes',
     // Placeholders
     phVolume: 'e.g. 90',
     phPooNotes: 'Color, consistency...',
@@ -2039,6 +2108,7 @@ const i18n = {
     pooReminderOff: 'Off',
     pooReminderBanner: "It's been {time} since last poo",
     defaultFeedType: 'Default Feed Type',
+    defaultPooColor: 'Default Poo Color',
     // Formula timer
     bottleMade: 'Bottle Made',
     feedingStarted: 'Feeding Started',
@@ -2107,14 +2177,18 @@ const i18n = {
     updateFailedToast: '更新失敗！',
     deleteConfirm: 'この記録を削除しますか？',
     last24Hours: '過去24時間',
-    dailySummary: '日次サマリー',
+    lastNightSummary: '昨夜',
+    todaySummary: '今日',
     weeklySummary: '週次サマリー',
     tab24h: '24時間',
-    tabDaily: '日次',
+    tabNight: '夜間',
+    tabToday: '今日',
     tabWeekly: '週次',
     totalSleep: '合計睡眠',
-    nightSleep: '夜間睡眠',
-    daySleep: '昼間睡眠',
+    totalNightSleep: '夜間睡眠',
+    nightFeeds: '夜間ミルク',
+    nightPoos: '夜間うんち',
+    wakeUps: '夜間覚醒',
     totalFeedVolume: '合計ミルク量',
     numberOfFeedings: 'ミルク回数',
     pooCount: 'うんち回数',
@@ -2124,6 +2198,8 @@ const i18n = {
     dayCol: '日',
     nightCol: '\ud83c\udf19',
     dayCol2: '\u2600\ufe0f',
+    nightColHint: '19\u20137時',
+    dayColHint: '7\u201319時',
     sleepCol: 'ねんね',
     feedCol: 'ミルク',
     pooCol: 'うんち',
@@ -2131,7 +2207,10 @@ const i18n = {
     avgPerDay: '平均/日',
     trends14Days: 'トレンド（14日間）',
     dailySleepHours: '日次睡眠（時間）',
-    dailyFeedVolumeMl: '日次ミルク量（ml）',
+    dailyFeedVolumeMl: '日次ミルク量 \u2014 ml（0\u201324時）',
+    nightSleepLabel: '夜間（19\u20137時）',
+    daySleepLabel: '昼間（7\u201319時）',
+    pctNightLabel: '夜間%',
     longestSleep: '最長睡眠',
     avgFeedGap: '平均ミルク間隔',
     pooFrequency: 'うんち頻度',
@@ -2158,9 +2237,16 @@ const i18n = {
     now: '今',
     exportCsv: 'CSVエクスポート',
     noDataExport: 'データがありません。',
-    navSummaries: 'サマリー',
+    navTotals: '合計',
     navTrends: 'トレンド',
     navReport: 'レポート',
+    tagQuestion: '質問',
+    tagConcern: '心配',
+    tagMilestone: '成長',
+    questionsSection: '医師への質問',
+    concernsSection: '心配事',
+    milestonesSection: '成長の記録',
+    otherNotesSection: 'その他のメモ',
     phVolume: '例: 90',
     phPooNotes: '固さなど...',
     phNote: '覚えておきたいこと...',
@@ -2232,6 +2318,7 @@ const i18n = {
     pooReminderOff: 'オフ',
     pooReminderBanner: '最後のうんちから{time}経ちました',
     defaultFeedType: 'デフォルトミルク種類',
+    defaultPooColor: 'デフォルトうんち色',
     // Formula timer
     bottleMade: 'ミルク作った',
     feedingStarted: '授乳開始',
@@ -2286,11 +2373,17 @@ function applyLang() {
 
   // Summary tabs
   document.getElementById('tab24hLabel').textContent = t('tab24h');
-  document.getElementById('tabDailyLabel').textContent = t('tabDaily');
+  document.getElementById('tabNightLabel').textContent = t('tabNight');
+  document.getElementById('tabTodayLabel').textContent = t('tabToday');
   document.getElementById('tabWeeklyLabel').textContent = t('tabWeekly');
 
+  // Note tags
+  document.getElementById('tagQuestionLabel').textContent = t('tagQuestion');
+  document.getElementById('tagConcernLabel').textContent = t('tagConcern');
+  document.getElementById('tagMilestoneLabel').textContent = t('tagMilestone');
+
   // Nav buttons
-  document.getElementById('navLabelSummaries').textContent = t('navSummaries');
+  document.getElementById('navLabelTotals').textContent = t('navTotals');
   document.getElementById('navLabelTrends').textContent = t('navTrends');
   document.getElementById('navLabelReport').textContent = t('navReport');
 
@@ -2311,6 +2404,7 @@ function applyLang() {
   document.getElementById('pooReminderLabel').innerHTML = '&#x1F4A9; ' + t('pooReminder');
   document.getElementById('optPooReminderOff').textContent = t('pooReminderOff');
   document.getElementById('defaultFeedTypeLabel').textContent = t('defaultFeedType');
+  document.getElementById('defaultPooColorLabel').textContent = t('defaultPooColor');
   document.getElementById('optDefFormula').textContent = t('formula');
   document.getElementById('optDefBreast').textContent = t('breastMilk');
   document.getElementById('optDefMixed').textContent = t('mixed');
@@ -2481,13 +2575,14 @@ function openModal(type) {
     document.getElementById('pooTime').value = now;
     document.getElementById('pooDate').value = today;
     document.getElementById('pooNotes').value = '';
-    setPooColor('brown');
+    setPooColor(localStorage.getItem('niko_default_poo_color') || 'brown');
     btn.textContent = t('savePoo');
   } else {
     document.getElementById('noteFields').style.display = 'block';
     document.getElementById('noteTime').value = now;
     document.getElementById('noteDate').value = today;
     document.getElementById('noteText').value = '';
+    setNoteTag('');
     btn.textContent = t('saveNote');
   }
 
@@ -2544,6 +2639,7 @@ function editEntry(id) {
     document.getElementById('noteTime').value = entry.time || '';
     document.getElementById('noteDate').value = entry.date || '';
     document.getElementById('noteText').value = entry.text || '';
+    setNoteTag(entry.tag || '');
     btn.textContent = t('updateNote');
   }
 
@@ -2622,12 +2718,13 @@ async function saveEntry(e) {
     const time = document.getElementById('noteTime').value;
     const date = document.getElementById('noteDate').value;
     const text = document.getElementById('noteText').value;
+    const tag = document.getElementById('noteTag').value || '';
     if (!text) { btn.disabled = false; return; }
 
     if (isEditing) {
-      await updateEntry(editingId, editingFbKey, { time, date, text });
+      await updateEntry(editingId, editingFbKey, { time, date, text, tag });
     } else {
-      await addEntry({ type: 'note', date, time, text });
+      await addEntry({ type: 'note', date, time, text, tag });
     }
   }
 
@@ -2688,6 +2785,11 @@ function renderEntries() {
       icon = '&#x1F4DD;'; iconClass = 'note';
       timeStr = formatTime12(e.time);
       title = t('noteTitle');
+      if (e.tag) {
+        const tagClass = 'tag-' + e.tag;
+        const tagLabel = t('tag' + e.tag.charAt(0).toUpperCase() + e.tag.slice(1));
+        title += ' <span class="entry-tag ' + tagClass + '">' + tagLabel + '</span>';
+      }
       sub = e.text || '';
     }
     return '<div class="entry-card" onclick="editEntry(\'' + e.id + '\')">' +
@@ -2903,6 +3005,13 @@ function updateSummaryDateLabel() {
     const weDate = new Date(we + 'T00:00:00');
     label.textContent = wsDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
       ' \u2013 ' + weDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  } else if (currentSummaryTab === 'night') {
+    // Show the night range: prev evening → this morning
+    const prevDate = addDays(summaryDate, -1);
+    const prevDt = new Date(prevDate + 'T00:00:00');
+    const thisDt = new Date(summaryDate + 'T00:00:00');
+    label.textContent = prevDt.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
+      ' 7pm \u2013 ' + thisDt.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) + ' 7am';
   } else {
     label.textContent = formatDateShort(summaryDate);
   }
@@ -2921,10 +3030,11 @@ function updateSummaryDateLabel() {
 function switchSummaryTab(tab) {
   currentSummaryTab = tab;
   document.getElementById('tab24h').classList.toggle('active', tab === '24h');
-  document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
+  document.getElementById('tabNight').classList.toggle('active', tab === 'night');
+  document.getElementById('tabToday').classList.toggle('active', tab === 'today');
   document.getElementById('tabWeekly').classList.toggle('active', tab === 'weekly');
 
-  // Hide date nav for 24h (it's always "right now"), show for daily/weekly
+  // Hide date nav for 24h (it's always "right now"), show for others
   document.getElementById('summaryDateNav').style.display = tab === '24h' ? 'none' : 'flex';
   updateSummaryDateLabel();
 
@@ -2943,7 +3053,6 @@ function switchSummaryTab(tab) {
       return ts && ts >= cutoff && ts <= now;
     });
 
-    // Accurate sleep: clip to 24h window using range function
     let sleepMins = 0, longestSleepMins = 0;
     recentEntries.filter(e => e.type === 'sleep').forEach(e => {
       const mins = calcSleepMinsInRange(e, cutoffMs, nowMs);
@@ -2951,7 +3060,6 @@ function switchSummaryTab(tab) {
       if (mins > longestSleepMins) longestSleepMins = mins;
     });
 
-    // Feed/poo are point-in-time, no clipping needed
     let feedMl = 0, feedCount = 0, pooCount = 0;
     recentEntries.forEach(e => {
       if (e.type === 'feed') { feedCount++; feedMl += (e.volume || 0); }
@@ -2965,44 +3073,83 @@ function switchSummaryTab(tab) {
       '<span class="stat-value sleep-color">' + formatMins(longestSleepMins) + '</span>' +
     '</div>';
 
-    // Since last feed/poo (always real-time for 24h tab)
     {
-      let lastFeedAgo = '--';
-      let lastFeedTime = null;
+      const now2 = new Date();
+      let lastFeedAgo = '--', lastFeedTime = null;
       entries.filter(e => e.type === 'feed').forEach(e => {
         const ts = getEntryTimestamp(e);
         if (ts && (!lastFeedTime || ts > lastFeedTime)) lastFeedTime = ts;
       });
-      if (lastFeedTime) lastFeedAgo = formatTimeSince(now - lastFeedTime);
+      if (lastFeedTime) lastFeedAgo = formatTimeSince(now2 - lastFeedTime);
 
-      let lastPooAgo = '--';
-      let lastPooTime = null;
+      let lastPooAgo = '--', lastPooTime = null;
       entries.filter(e => e.type === 'poo').forEach(e => {
         const ts = getEntryTimestamp(e);
         if (ts && (!lastPooTime || ts > lastPooTime)) lastPooTime = ts;
       });
-      if (lastPooTime) lastPooAgo = formatTimeSince(now - lastPooTime);
+      if (lastPooTime) lastPooAgo = formatTimeSince(now2 - lastPooTime);
 
-      html += '<div class="summary-stat">' +
-        '<span class="stat-label">&#x1F37C; ' + t('sinceLastFeed') + '</span>' +
-        '<span class="stat-value feed-color">' + lastFeedAgo + '</span>' +
-      '</div>';
-      html += '<div class="summary-stat">' +
-        '<span class="stat-label">&#x1F4A9; ' + t('sinceLastPoo') + '</span>' +
-        '<span class="stat-value poo-color">' + lastPooAgo + '</span>' +
-      '</div>';
+      html += '<div class="summary-stat"><span class="stat-label">&#x1F37C; ' + t('sinceLastFeed') + '</span><span class="stat-value feed-color">' + lastFeedAgo + '</span></div>';
+      html += '<div class="summary-stat"><span class="stat-label">&#x1F4A9; ' + t('sinceLastPoo') + '</span><span class="stat-value poo-color">' + lastPooAgo + '</span></div>';
     }
     body.innerHTML = html;
 
-  } else if (tab === 'daily') {
-    document.getElementById('summaryTitle').textContent = t('dailySummary');
+  } else if (tab === 'night') {
+    document.getElementById('summaryTitle').textContent = t('lastNightSummary');
+    // Night window: previous day 19:00 → this day 07:00
+    const nightEndMs = new Date(summaryDate + 'T07:00:00').getTime();
+    const nightStartMs = nightEndMs - 12 * 60 * 60 * 1000; // prev day 19:00
+    const prevDate = addDays(summaryDate, -1);
+
+    // Find sleep entries that could overlap with the night window
+    const sleepEntries = entries.filter(e => {
+      if (e.type !== 'sleep' || !e.sleepStart || !e.sleepEnd) return false;
+      return e.date === summaryDate || e.date === prevDate ||
+             e.sleepEndDate === summaryDate || e.sleepEndDate === prevDate;
+    });
+
+    let totalNightSleep = 0, longestStretch = 0, wakeUps = 0;
+    const nightSleeps = [];
+    sleepEntries.forEach(e => {
+      const mins = calcSleepMinsInRange(e, nightStartMs, nightEndMs);
+      if (mins > 0) {
+        totalNightSleep += mins;
+        nightSleeps.push({ entry: e, mins });
+        if (mins > longestStretch) longestStretch = mins;
+      }
+    });
+    // Wake-ups = number of separate sleep sessions minus 1 (if any sleep happened)
+    if (nightSleeps.length > 1) wakeUps = nightSleeps.length - 1;
+
+    // Night feeds and poos (events that occurred in the 7pm-7am window)
+    let nightFeedCount = 0, nightFeedMl = 0, nightPooCount = 0;
+    entries.forEach(e => {
+      const ts = getEntryTimestamp(e);
+      if (!ts) return;
+      const tsMs = ts.getTime();
+      if (tsMs >= nightStartMs && tsMs < nightEndMs) {
+        if (e.type === 'feed') { nightFeedCount++; nightFeedMl += (e.volume || 0); }
+        if (e.type === 'poo') nightPooCount++;
+      }
+    });
+
+    let html = '<div class="summary-stat"><span class="stat-label">&#x1F319; ' + t('totalNightSleep') + '</span><span class="stat-value sleep-color">' + formatMins(totalNightSleep) + '</span></div>';
+    html += '<div class="summary-stat"><span class="stat-label">&#x1F4A4; ' + t('longestSleepStretch') + '</span><span class="stat-value sleep-color">' + formatMins(longestStretch) + '</span></div>';
+    html += '<div class="summary-stat"><span class="stat-label">&#x1F440; ' + t('wakeUps') + '</span><span class="stat-value">' + wakeUps + '</span></div>';
+    html += '<div class="summary-stat"><span class="stat-label">&#x1F37C; ' + t('nightFeeds') + '</span><span class="stat-value feed-color">' + nightFeedCount + (nightFeedMl > 0 ? ' (' + nightFeedMl + ' ml)' : '') + '</span></div>';
+    html += '<div class="summary-stat"><span class="stat-label">&#x1F4A9; ' + t('nightPoos') + '</span><span class="stat-value poo-color">' + nightPooCount + '</span></div>';
+    body.innerHTML = html;
+
+  } else if (tab === 'today') {
+    document.getElementById('summaryTitle').textContent = t('todaySummary');
     const stats = calcDayStatsAccurate(entries, summaryDate);
-    body.innerHTML = renderDayStats(stats);
+    // Today tab: just total sleep (midnight-midnight), no night/day sub-rows
+    body.innerHTML = renderDayStats({ sleepMins: stats.sleepMins, feedMl: stats.feedMl, feedCount: stats.feedCount, pooCount: stats.pooCount });
   } else {
     const weekStart = getWeekStart(summaryDate);
     document.getElementById('summaryTitle').textContent = t('weeklySummary');
     let html = '<div class="summary-day-list">';
-    html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('nightCol') + '</span><span>' + t('dayCol2') + '</span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
+    html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('nightCol') + '<span class="col-hint">' + t('nightColHint') + '</span></span><span>' + t('dayCol2') + '<span class="col-hint">' + t('dayColHint') + '</span></span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span></div>';
     let totals = { nightMins: 0, dayMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
     for (let i = 0; i < 7; i++) {
       const d = addDays(weekStart, i);
@@ -3064,17 +3211,6 @@ function renderDayStats(stats) {
       '<span class="stat-label">&#x1F4A4; ' + t('totalSleep') + '</span>' +
       '<span class="stat-value sleep-color">' + formatMins(stats.sleepMins) + '</span>' +
     '</div>';
-  // Night/day breakdown if available
-  if (stats.nightSleepMins !== undefined) {
-    html += '<div class="summary-stat" style="padding-left:24px;font-size:14px">' +
-        '<span class="stat-label">&#x1F319; ' + t('nightSleep') + '</span>' +
-        '<span class="stat-value sleep-color">' + formatMins(stats.nightSleepMins) + '</span>' +
-      '</div>' +
-      '<div class="summary-stat" style="padding-left:24px;font-size:14px">' +
-        '<span class="stat-label">&#x2600;&#xFE0F; ' + t('daySleep') + '</span>' +
-        '<span class="stat-value sleep-color">' + formatMins(stats.daySleepMins) + '</span>' +
-      '</div>';
-  }
   html += '<div class="summary-stat">' +
       '<span class="stat-label">&#x1F37C; ' + t('totalFeedVolume') + '</span>' +
       '<span class="stat-value feed-color">' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
@@ -3105,49 +3241,70 @@ function renderTrends() {
   const today = todayStr();
   const days = [];
 
-  // Build 14 days of data (today and 13 days before)
+  // Build 14 days of data using accurate stats
   for (let i = 13; i >= 0; i--) {
     const d = addDays(today, -i);
-    const dayEntries = entries.filter(e => e.date === d);
-    const stats = calcDayStats(dayEntries);
+    const stats = calcDayStatsAccurate(entries, d);
     const dt = new Date(d + 'T00:00:00');
     const trendLocale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
     const dayLabel = dt.toLocaleDateString(trendLocale, { weekday: 'narrow' });
     const dayNum = dt.getDate();
+    const nightHrs = Math.round((stats.nightSleepMins / 60) * 10) / 10;
+    const dayHrs = Math.round((stats.daySleepMins / 60) * 10) / 10;
+    const totalHrs = Math.round(((stats.nightSleepMins + stats.daySleepMins) / 60) * 10) / 10;
+    const nightPct = totalHrs > 0 ? Math.round((nightHrs / totalHrs) * 100) : 0;
     days.push({
-      date: d,
-      label: dayLabel,
-      dayNum: dayNum,
-      sleepHrs: Math.round((stats.sleepMins / 60) * 10) / 10,
+      date: d, label: dayLabel, dayNum,
+      nightHrs, dayHrs, totalHrs, nightPct,
       feedMl: stats.feedMl
     });
   }
 
-  // Find max values for scaling
-  const maxSleep = Math.max(...days.map(d => d.sleepHrs), 1);
+  const maxSleep = Math.max(...days.map(d => d.totalHrs), 1);
   const maxFeed = Math.max(...days.map(d => d.feedMl), 1);
 
   let html = '';
 
-  // Sleep chart
+  // Stacked sleep chart with night % line
   html += '<div class="chart-section">';
   html += '<div class="chart-title">&#x1F4A4; ' + t('dailySleepHours') + '</div>';
-  html += '<div class="chart-container">';
-  html += '<div class="chart-y-label">' + maxSleep.toFixed(1) + 'h</div>';
-  html += '<div class="chart-area">';
+  html += '<div class="trend-legend">' +
+    '<span class="trend-legend-item"><span class="trend-legend-swatch" style="background:var(--sleep)"></span> ' + t('nightSleepLabel') + '</span>' +
+    '<span class="trend-legend-item"><span class="trend-legend-swatch" style="background:#e8c547"></span> ' + t('daySleepLabel') + '</span>' +
+    '<span class="trend-legend-item"><span class="trend-legend-line" style="background:var(--danger)"></span> ' + t('pctNightLabel') + '</span>' +
+  '</div>';
+  html += '<div class="chart-container" style="position:relative">';
+  html += '<div style="display:flex;justify-content:space-between"><div class="chart-y-label">' + maxSleep.toFixed(1) + 'h</div><div class="chart-y-label">100%</div></div>';
+  html += '<div class="chart-area" style="position:relative">';
   days.forEach(d => {
-    const pct = maxSleep > 0 ? (d.sleepHrs / maxSleep) * 100 : 0;
-    const valLabel = d.sleepHrs > 0 ? d.sleepHrs.toFixed(1) : '';
+    const nightPct = maxSleep > 0 ? (d.nightHrs / maxSleep) * 100 : 0;
+    const dayPct = maxSleep > 0 ? (d.dayHrs / maxSleep) * 100 : 0;
+    const valLabel = d.totalHrs > 0 ? d.totalHrs.toFixed(1) : '';
     html += '<div class="chart-bar-wrap">' +
       (valLabel ? '<div class="chart-bar-val">' + valLabel + '</div>' : '<div class="chart-bar-val">&nbsp;</div>') +
-      '<div class="chart-bar sleep-bar" style="height:' + pct + '%"></div>' +
+      '<div style="width:100%;max-width:28px;display:flex;flex-direction:column;align-items:stretch">' +
+        '<div style="background:#e8c547;height:' + dayPct + '%;border-radius:4px 4px 0 0;min-height:0"></div>' +
+        '<div style="background:var(--sleep);height:' + nightPct + '%;min-height:0"></div>' +
+      '</div>' +
     '</div>';
   });
+  // SVG overlay for % night line
+  html += '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">';
+  const points = days.map((d, i) => {
+    const x = ((i + 0.5) / 14) * 100;
+    const y = 100 - d.nightPct;
+    return x + ',' + y;
+  }).join(' ');
+  html += '<polyline points="' + points + '" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />';
+  days.forEach((d, i) => {
+    const x = ((i + 0.5) / 14) * 100;
+    const y = 100 - d.nightPct;
+    html += '<circle cx="' + x + '" cy="' + y + '" r="2.5" fill="var(--danger)" />';
+  });
+  html += '</svg>';
   html += '</div>';
   html += '<div class="chart-x-labels">';
-  days.forEach(d => {
-    html += '<div class="chart-x-label">' + d.dayNum + '</div>';
-  });
+  days.forEach(d => { html += '<div class="chart-x-label">' + d.dayNum + '</div>'; });
   html += '</div>';
   html += '</div></div>';
 
@@ -3167,9 +3324,7 @@ function renderTrends() {
   });
   html += '</div>';
   html += '<div class="chart-x-labels">';
-  days.forEach(d => {
-    html += '<div class="chart-x-label">' + d.dayNum + '</div>';
-  });
+  days.forEach(d => { html += '<div class="chart-x-label">' + d.dayNum + '</div>'; });
   html += '</div>';
   html += '</div></div>';
 
@@ -3375,6 +3530,17 @@ function setPooColor(color) {
   });
 }
 
+function setNoteTag(tag) {
+  const current = document.getElementById('noteTag').value;
+  // Toggle off if same tag clicked again
+  const newTag = (tag === current) ? '' : tag;
+  document.getElementById('noteTag').value = newTag;
+  document.querySelectorAll('#noteTagPicker .note-tag-btn').forEach(btn => {
+    const btnTag = btn.dataset.tag;
+    btn.className = 'note-tag-btn' + (btnTag === newTag ? ' active-' + btnTag : '');
+  });
+}
+
 // Color picker click handler
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('.color-opt');
@@ -3518,6 +3684,20 @@ function saveDefaultFeedType() {
 function loadDefaultFeedType() {
   const val = localStorage.getItem('niko_default_feed_type') || 'formula';
   document.getElementById('defaultFeedTypeSelect').value = val;
+}
+
+function saveDefaultPooColor(color) {
+  localStorage.setItem('niko_default_poo_color', color);
+  document.querySelectorAll('#defaultPooColorPicker .color-opt').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.color === color);
+  });
+}
+
+function loadDefaultPooColor() {
+  const val = localStorage.getItem('niko_default_poo_color') || 'brown';
+  document.querySelectorAll('#defaultPooColorPicker .color-opt').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.color === val);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3818,30 +3998,43 @@ function renderDoctorReport() {
     html += '</div>';
   }
 
-  // Section E: Notes & Questions for Doctor
+  // Section E: Notes & Questions for Doctor (organized by tag)
   const noteEntries = periodEntries.filter(e => e.type === 'note');
-  // Also gather stool flag events even without notes
   const flagStoolEntries = periodEntries.filter(e => e.type === 'poo' && ['red', 'white', 'black'].includes(e.color));
 
   if (noteEntries.length > 0 || flagStoolEntries.length > 0) {
     html += '<div class="report-section">';
     html += '<div class="report-section-title">\uD83D\uDCDD ' + t('topicsToDiscuss') + '</div>';
 
-    // Notes reverse chronological
-    const allItems = [];
-    noteEntries.forEach(e => {
-      allItems.push({ date: e.date, time: e.time, text: e.text, type: 'note' });
-    });
-    flagStoolEntries.forEach(e => {
-      const colorKey = 'color' + e.color.charAt(0).toUpperCase() + e.color.slice(1);
-      allItems.push({ date: e.date, time: e.time, text: t(colorKey) + ' stool' + (e.notes ? ' \u2014 ' + e.notes : ''), type: 'flag' });
-    });
-    allItems.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    // Group notes by tag
+    const questions = noteEntries.filter(e => e.tag === 'question');
+    const concerns = noteEntries.filter(e => e.tag === 'concern');
+    const milestones = noteEntries.filter(e => e.tag === 'milestone');
+    const otherNotes = noteEntries.filter(e => !e.tag || !['question', 'concern', 'milestone'].includes(e.tag));
 
-    allItems.forEach(item => {
-      const prefix = item.type === 'flag' ? '\u26A0\uFE0F ' : '\u2022 ';
-      html += '<div class="report-note">' + prefix + '<span class="report-note-date">' + formatDateShort(item.date) + ':</span> ' + (item.text || '') + '</div>';
-    });
+    const renderNoteGroup = (title, icon, notes) => {
+      if (notes.length === 0) return '';
+      let g = '<div style="margin-top:8px"><strong>' + icon + ' ' + title + '</strong></div>';
+      notes.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+      notes.forEach(e => {
+        g += '<div class="report-note">\u2022 <span class="report-note-date">' + formatDateShort(e.date) + ':</span> ' + (e.text || '') + '</div>';
+      });
+      return g;
+    };
+
+    html += renderNoteGroup(t('questionsSection'), '\u2753', questions);
+    html += renderNoteGroup(t('concernsSection'), '\u26A0\uFE0F', concerns);
+    html += renderNoteGroup(t('milestonesSection'), '\u2B50', milestones);
+    html += renderNoteGroup(t('otherNotesSection'), '\uD83D\uDCDD', otherNotes);
+
+    // Flagged stool entries
+    if (flagStoolEntries.length > 0) {
+      html += '<div style="margin-top:8px"><strong>\uD83D\uDEA8 Stool Alerts</strong></div>';
+      flagStoolEntries.forEach(e => {
+        const colorKey = 'color' + e.color.charAt(0).toUpperCase() + e.color.slice(1);
+        html += '<div class="report-note">\u26A0\uFE0F <span class="report-note-date">' + formatDateShort(e.date) + ':</span> ' + t(colorKey) + ' stool' + (e.notes ? ' \u2014 ' + e.notes : '') + '</div>';
+      });
+    }
     html += '</div>';
   }
 
@@ -3953,13 +4146,25 @@ function copyReport() {
     text += '  ' + t('avgPoosPerDay') + ': ' + (pooEntries.length / totalDays).toFixed(1) + '\n\n';
   }
 
-  // Notes
-  const noteEntries = periodEntries.filter(e => e.type === 'note');
-  if (noteEntries.length > 0) {
+  // Notes (grouped by tag)
+  const noteEntriesCopy = periodEntries.filter(e => e.type === 'note');
+  if (noteEntriesCopy.length > 0) {
     text += '\uD83D\uDCDD ' + t('topicsToDiscuss') + '\n';
-    noteEntries.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
-    noteEntries.forEach(e => {
-      text += '  \u2022 ' + formatDateShort(e.date) + ': ' + (e.text || '') + '\n';
+    const tagGroups = [
+      { tag: 'question', label: t('questionsSection'), icon: '\u2753' },
+      { tag: 'concern', label: t('concernsSection'), icon: '\u26A0\uFE0F' },
+      { tag: 'milestone', label: t('milestonesSection'), icon: '\u2B50' },
+      { tag: '', label: t('otherNotesSection'), icon: '\uD83D\uDCDD' }
+    ];
+    tagGroups.forEach(g => {
+      const notes = g.tag ? noteEntriesCopy.filter(e => e.tag === g.tag) : noteEntriesCopy.filter(e => !e.tag || !['question', 'concern', 'milestone'].includes(e.tag));
+      if (notes.length > 0) {
+        text += '  ' + g.icon + ' ' + g.label + '\n';
+        notes.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+        notes.forEach(e => {
+          text += '    \u2022 ' + formatDateShort(e.date) + ': ' + (e.text || '') + '\n';
+        });
+      }
     });
   }
 
@@ -3974,7 +4179,7 @@ function copyReport() {
 function exportData() {
   const entries = loadEntries();
   if (entries.length === 0) { alert(t('noDataExport')); return; }
-  const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','color','notes','text','createdAt'];
+  const headers = ['id','type','date','time','sleepStart','sleepEnd','sleepEndDate','volume','feedType','pee','color','notes','text','tag','createdAt'];
   let csv = headers.join(',') + '\n';
   entries.forEach(e => {
     csv += headers.map(h => {
@@ -4026,6 +4231,7 @@ loadProfile();
 loadFeedReminder();
 loadPooReminder();
 loadDefaultFeedType();
+loadDefaultPooColor();
 // Apply saved language on load
 setLang(currentLang);
 syncFromCloud();
