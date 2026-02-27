@@ -2662,11 +2662,28 @@ async function saveEntry(e) {
   if (type === 'sleep') {
     const start = document.getElementById('sleepStart').value;
     const end = document.getElementById('sleepEnd').value;
-    const date = document.getElementById('sleepDate').value;
+    let date = document.getElementById('sleepDate').value;
     if (!start) { btn.disabled = false; return; }
 
+    // Fix midnight-crossing: compute correct date and sleepEndDate
+    let sleepEndDate = date;
+    if (end) {
+      const [sh] = start.split(':').map(Number);
+      const [eh] = end.split(':').map(Number);
+      const startMins = start.split(':').map(Number).reduce((h,m) => h*60+m);
+      const endMins = end.split(':').map(Number).reduce((h,m) => h*60+m);
+      if (endMins < startMins) {
+        // Overnight sleep detected (e.g. 22:30 → 01:22)
+        // If form date = today and start is PM, user likely means sleep started yesterday
+        if (date === todayStr() && sh >= 12 && new Date().getHours() < 12) {
+          date = addDays(date, -1);
+        }
+        sleepEndDate = addDays(date, 1);
+      }
+    }
+
     if (isEditing) {
-      await updateEntry(editingId, editingFbKey, { sleepStart: start, sleepEnd: end || null, sleepEndDate: end ? date : null, date });
+      await updateEntry(editingId, editingFbKey, { sleepStart: start, sleepEnd: end || null, sleepEndDate: end ? sleepEndDate : null, date });
     } else {
       const active = localStorage.getItem('niko_sleep_active');
       if (active && end) {
@@ -2674,7 +2691,7 @@ async function saveEntry(e) {
         await saveSleepActive(null);
         showFunToast('\u2600\uFE0F', randomFunToast('sleepEnd'));
       } else if (end) {
-        await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate: date });
+        await addEntry({ type: 'sleep', date, sleepStart: start, sleepEnd: end, sleepEndDate });
         showFunToast('\u2600\uFE0F', randomFunToast('sleepEnd'));
       } else {
         await saveSleepActive({ time: start, date });
@@ -2844,10 +2861,11 @@ function calcDayStatsAccurate(allEntries, dateStr) {
 
   // Find all sleep entries that could overlap with this date (or its night window)
   const prevDate = addDays(dateStr, -1);
+  const nextDate = addDays(dateStr, 1);
   const sleepEntries = allEntries.filter(e => {
     if (e.type !== 'sleep' || !e.sleepStart || !e.sleepEnd) return false;
-    return e.date === dateStr || e.date === prevDate ||
-           e.sleepEndDate === dateStr || e.sleepEndDate === prevDate;
+    return e.date === dateStr || e.date === prevDate || e.date === nextDate ||
+           e.sleepEndDate === dateStr || e.sleepEndDate === prevDate || e.sleepEndDate === nextDate;
   });
 
   let sleepMins = 0, nightSleepMins = 0, daySleepMins = 0;
@@ -3100,12 +3118,13 @@ function switchSummaryTab(tab) {
     const nightEndMs = new Date(summaryDate + 'T07:00:00').getTime();
     const nightStartMs = nightEndMs - 12 * 60 * 60 * 1000; // prev day 19:00
     const prevDate = addDays(summaryDate, -1);
+    const nextDate = addDays(summaryDate, 1);
 
     // Find sleep entries that could overlap with the night window
     const sleepEntries = entries.filter(e => {
       if (e.type !== 'sleep' || !e.sleepStart || !e.sleepEnd) return false;
-      return e.date === summaryDate || e.date === prevDate ||
-             e.sleepEndDate === summaryDate || e.sleepEndDate === prevDate;
+      return e.date === summaryDate || e.date === prevDate || e.date === nextDate ||
+             e.sleepEndDate === summaryDate || e.sleepEndDate === prevDate || e.sleepEndDate === nextDate;
     });
 
     let totalNightSleep = 0, longestStretch = 0, wakeUps = 0;
