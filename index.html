@@ -1994,6 +1994,7 @@ const i18n = {
     nightSleepLabel: 'Night (7p\u20137a)',
     daySleepLabel: 'Day (7a\u20137p)',
     pctNightLabel: '% Night',
+    avgMlPerFeed: 'Avg ml/feed',
     longestSleep: 'Longest Sleep',
     avgFeedGap: 'Avg Feed Gap',
     pooFrequency: 'Poo Frequency',
@@ -2211,6 +2212,7 @@ const i18n = {
     nightSleepLabel: '夜間（19\u20137時）',
     daySleepLabel: '昼間（7\u201319時）',
     pctNightLabel: '夜間%',
+    avgMlPerFeed: '平均ml/回',
     longestSleep: '最長睡眠',
     avgFeedGap: '平均ミルク間隔',
     pooFrequency: 'うんち頻度',
@@ -3272,15 +3274,17 @@ function renderTrends() {
     const dayHrs = Math.round((stats.daySleepMins / 60) * 10) / 10;
     const totalHrs = Math.round(((stats.nightSleepMins + stats.daySleepMins) / 60) * 10) / 10;
     const nightPct = totalHrs > 0 ? Math.round((nightHrs / totalHrs) * 100) : 0;
+    const avgMlPerFeed = stats.feedCount > 0 ? Math.round(stats.feedMl / stats.feedCount) : 0;
     days.push({
       date: d, label: dayLabel, dayNum,
       nightHrs, dayHrs, totalHrs, nightPct,
-      feedMl: stats.feedMl
+      feedMl: stats.feedMl, feedCount: stats.feedCount, avgMlPerFeed
     });
   }
 
   const maxSleep = Math.max(...days.map(d => d.totalHrs), 1);
   const maxFeed = Math.max(...days.map(d => d.feedMl), 1);
+  const maxAvgMl = Math.max(...days.map(d => d.avgMlPerFeed), 1);
 
   let html = '';
 
@@ -3328,12 +3332,16 @@ function renderTrends() {
   html += '</div>';
   html += '</div></div>';
 
-  // Feed chart
+  // Feed chart with avg ml/feed line
   html += '<div class="chart-section">';
   html += '<div class="chart-title">&#x1F37C; ' + t('dailyFeedVolumeMl') + '</div>';
-  html += '<div class="chart-container">';
-  html += '<div class="chart-y-label">' + maxFeed + ' ml</div>';
-  html += '<div class="chart-area">';
+  html += '<div class="trend-legend">' +
+    '<span class="trend-legend-item"><span class="trend-legend-swatch" style="background:var(--feed)"></span> ' + t('totalFeedVolume') + '</span>' +
+    '<span class="trend-legend-item"><span class="trend-legend-line" style="background:#8e44ad"></span> ' + t('avgMlPerFeed') + '</span>' +
+  '</div>';
+  html += '<div class="chart-container" style="position:relative">';
+  html += '<div style="display:flex;justify-content:space-between"><div class="chart-y-label">' + maxFeed + ' ml</div><div class="chart-y-label">' + maxAvgMl + ' ml/feed</div></div>';
+  html += '<div class="chart-area" style="position:relative">';
   days.forEach(d => {
     const pct = maxFeed > 0 ? (d.feedMl / maxFeed) * 100 : 0;
     const valLabel = d.feedMl > 0 ? d.feedMl : '';
@@ -3342,6 +3350,26 @@ function renderTrends() {
       '<div class="chart-bar feed-bar" style="height:' + pct + '%"></div>' +
     '</div>';
   });
+  // Overlay dots for avg ml/feed
+  days.forEach((d, i) => {
+    if (d.avgMlPerFeed <= 0) return;
+    const leftPct = ((i + 0.5) / 14) * 100;
+    const bottomPct = (d.avgMlPerFeed / maxAvgMl) * 100;
+    html += '<div style="position:absolute;left:' + leftPct.toFixed(1) + '%;bottom:' + bottomPct.toFixed(1) + '%;width:6px;height:6px;background:#8e44ad;border-radius:50%;transform:translate(-50%,50%);z-index:2"></div>';
+  });
+  // SVG line connecting avg ml/feed dots
+  const avgPoints = days.filter(d => d.avgMlPerFeed > 0);
+  if (avgPoints.length > 1) {
+    html += '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1">';
+    const feedLinePoints = avgPoints.map(d => {
+      const i = days.indexOf(d);
+      const x = ((i + 0.5) / 14) * 100;
+      const y = 100 - (d.avgMlPerFeed / maxAvgMl) * 100;
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    html += '<polyline points="' + feedLinePoints + '" fill="none" stroke="#8e44ad" stroke-width="1.5" vector-effect="non-scaling-stroke" />';
+    html += '</svg>';
+  }
   html += '</div>';
   html += '<div class="chart-x-labels">';
   days.forEach(d => { html += '<div class="chart-x-label">' + d.dayNum + '</div>'; });
