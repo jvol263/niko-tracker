@@ -134,7 +134,8 @@ body {
 .quick-btn.feed-btn { background: var(--feed); }
 .quick-btn.poo-btn { background: var(--poo); }
 .quick-btn.note-btn { background: var(--note); }
-.quick-btn.measure-btn { background: var(--measure); }
+.quick-btn.measure-btn { background: var(--measure); grid-column: 1 / -1; flex-direction: row; padding: 10px 16px; gap: 8px; justify-content: center; }
+.quick-btn.measure-btn .icon { font-size: 20px; }
 
 /* Time Since Last cards */
 .time-since-row {
@@ -3523,6 +3524,19 @@ function renderTrends() {
   // Growth charts (weight + height)
   const measureEntries = entries.filter(e => e.type === 'measure').sort((a, b) => a.date.localeCompare(b.date));
   if (measureEntries.length > 0) {
+    // Helper: compute interval gain/day labels between consecutive entries
+    function intervalLabels(arr, valKey, unit) {
+      const labels = [];
+      for (let j = 0; j < arr.length; j++) {
+        if (j === 0) { labels.push(''); continue; }
+        const prev = arr[j - 1], cur = arr[j];
+        const dBetween = Math.max(1, Math.round((new Date(cur.date + 'T00:00:00') - new Date(prev.date + 'T00:00:00')) / 86400000));
+        const gain = (cur[valKey] - prev[valKey]) / dBetween;
+        labels.push((gain >= 0 ? '+' : '') + gain.toFixed(1) + ' ' + unit + '/d');
+      }
+      return labels;
+    }
+
     // Weight chart
     const weightEntries = measureEntries.filter(e => e.weight);
     if (weightEntries.length > 0) {
@@ -3536,7 +3550,7 @@ function renderTrends() {
         const gainPerDay = ((lastW.weight - firstW.weight) / daysBetween).toFixed(1);
         html += '<div style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:6px">' + t('avgGainPerDay') + ': ' + gainPerDay + ' g/day</div>';
       }
-      html += '<div class="chart-container"><div class="chart-scroll-wrap"><div class="chart-inner" style="min-width:' + Math.max(weightEntries.length * 50, 100) + 'px">';
+      html += '<div class="chart-container"><div class="chart-scroll-wrap"><div class="chart-inner" style="min-width:' + Math.max(weightEntries.length * 60, 100) + 'px">';
       html += '<div class="chart-y-label">' + maxW + ' g</div>';
       html += '<div class="chart-area" style="position:relative">';
       const wRange = Math.max(maxW - minW, 1);
@@ -3544,6 +3558,11 @@ function renderTrends() {
         const pct = ((e.weight - minW) / wRange) * 80 + 20;
         html += '<div class="chart-bar-wrap"><div class="chart-bar-val">' + e.weight + '</div><div class="chart-bar" style="height:' + pct + '%;background:var(--measure)"></div></div>';
       });
+      html += '</div>';
+      // Interval gain/day row
+      const wLabels = intervalLabels(weightEntries, 'weight', 'g');
+      html += '<div class="chart-x-labels" style="margin-top:2px">';
+      wLabels.forEach(l => { html += '<div class="chart-x-label" style="font-size:8px;color:var(--measure);font-weight:600">' + l + '</div>'; });
       html += '</div>';
       html += '<div class="chart-x-labels">';
       weightEntries.forEach(e => { const dt = new Date(e.date + 'T00:00:00'); html += '<div class="chart-x-label">' + (dt.getMonth()+1) + '/' + dt.getDate() + '</div>'; });
@@ -3557,7 +3576,13 @@ function renderTrends() {
       const minH = Math.min(...heightEntries.map(e => e.height));
       html += '<div class="chart-section">';
       html += '<div class="chart-title">&#x1F4CF; ' + t('heightGrowthChart') + '</div>';
-      html += '<div class="chart-container"><div class="chart-scroll-wrap"><div class="chart-inner" style="min-width:' + Math.max(heightEntries.length * 50, 100) + 'px">';
+      if (heightEntries.length >= 2) {
+        const firstH = heightEntries[0], lastH = heightEntries[heightEntries.length - 1];
+        const daysBetweenH = Math.max(1, Math.round((new Date(lastH.date + 'T00:00:00') - new Date(firstH.date + 'T00:00:00')) / 86400000));
+        const gainPerDayH = ((lastH.height - firstH.height) / daysBetweenH).toFixed(2);
+        html += '<div style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:6px">' + t('avgGainPerDay') + ': ' + gainPerDayH + ' cm/day</div>';
+      }
+      html += '<div class="chart-container"><div class="chart-scroll-wrap"><div class="chart-inner" style="min-width:' + Math.max(heightEntries.length * 60, 100) + 'px">';
       html += '<div class="chart-y-label">' + maxH + ' cm</div>';
       html += '<div class="chart-area" style="position:relative">';
       const hRange = Math.max(maxH - minH, 1);
@@ -3565,6 +3590,11 @@ function renderTrends() {
         const pct = ((e.height - minH) / hRange) * 80 + 20;
         html += '<div class="chart-bar-wrap"><div class="chart-bar-val">' + e.height + '</div><div class="chart-bar" style="height:' + pct + '%;background:#7ba7a0"></div></div>';
       });
+      html += '</div>';
+      // Interval gain/day row
+      const hLabels = intervalLabels(heightEntries, 'height', 'cm');
+      html += '<div class="chart-x-labels" style="margin-top:2px">';
+      hLabels.forEach(l => { html += '<div class="chart-x-label" style="font-size:8px;color:#7ba7a0;font-weight:600">' + l + '</div>'; });
       html += '</div>';
       html += '<div class="chart-x-labels">';
       heightEntries.forEach(e => { const dt = new Date(e.date + 'T00:00:00'); html += '<div class="chart-x-label">' + (dt.getMonth()+1) + '/' + dt.getDate() + '</div>'; });
