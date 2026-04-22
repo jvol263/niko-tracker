@@ -856,12 +856,26 @@ body {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+  transition: opacity 0.15s;
+}
+.tracking-action-row.secondary {
+  opacity: 0.38;
+}
+.tracking-action-row.secondary:focus-within,
+.tracking-action-row.secondary:hover {
+  opacity: 0.85;
 }
 .tracking-action-label {
   font-size: 12px;
   color: var(--text-light);
-  width: 52px;
+  width: 56px;
   flex-shrink: 0;
+}
+.tracking-hint-text {
+  font-size: 10px;
+  color: var(--text-light);
+  font-style: italic;
+  margin-top: 5px;
 }
 .tracking-date-input {
   flex: 1;
@@ -2251,6 +2265,8 @@ const i18n = {
     trackingPauseLabel: 'Pause from:',
     trackingResumeLabel: 'Resume from:',
     trackingSince: 'since',
+    trackingHintActive: 'Pausing is indefinite — use Resume only when restarting.',
+    trackingHintPaused: 'Paused indefinitely — use Resume to restart from a date.',
     trackingEffectiveDate: 'Effective date',
     // Growth / Measure
     growth: 'Growth',
@@ -2486,6 +2502,8 @@ const i18n = {
     trackingPauseLabel: '停止日:',
     trackingResumeLabel: '再開日:',
     trackingSince: '〜',
+    trackingHintActive: '停止は無期限です。再開する場合のみ「再開」を使用してください。',
+    trackingHintPaused: '無期限停止中。再開日を設定して「再開」を押してください。',
     trackingEffectiveDate: '有効日',
     // Growth / Measure
     growth: '成長',
@@ -3924,18 +3942,20 @@ function renderTrackingSettings() {
           (state.active ? t('trackingOn') : t('trackingOff')) + sinceStr +
         '</span>' +
       '</div>' +
-      // Pause row
-      '<div class="tracking-action-row">' +
+      // Pause row — primary when active, secondary (dimmed) when already paused
+      '<div class="tracking-action-row' + (state.active ? '' : ' secondary') + '">' +
         '<span class="tracking-action-label">&#x23F8; ' + t('trackingPauseLabel') + '</span>' +
         '<input type="date" class="tracking-date-input" id="' + pauseId + '" value="' + today + '">' +
         '<button class="tracking-toggle-btn pause" onclick="applyTrackingToggle(\'' + cat.key + '\',false,document.getElementById(\'' + pauseId + '\').value)">' + t('trackingPauseBtn') + '</button>' +
       '</div>' +
-      // Resume row
-      '<div class="tracking-action-row">' +
+      // Resume row — primary when paused, secondary (dimmed) when already active
+      '<div class="tracking-action-row' + (state.active ? ' secondary' : '') + '">' +
         '<span class="tracking-action-label">&#x25B6; ' + t('trackingResumeLabel') + '</span>' +
         '<input type="date" class="tracking-date-input" id="' + resumeId + '" value="' + today + '">' +
         '<button class="tracking-toggle-btn resume" onclick="applyTrackingToggle(\'' + cat.key + '\',true,document.getElementById(\'' + resumeId + '\').value)">' + t('trackingResumeBtn') + '</button>' +
       '</div>' +
+      // Hint: pause is indefinite
+      '<div class="tracking-hint-text">' + t(state.active ? 'trackingHintActive' : 'trackingHintPaused') + '</div>' +
     '</div>';
   });
   container.innerHTML = html;
