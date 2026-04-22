@@ -824,6 +824,62 @@ body {
 }
 .setting-row input[type="text"] { width: 120px; text-align: right; }
 .setting-row input[type="date"] { width: 150px; }
+/* Tracking section */
+.tracking-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tracking-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 90px;
+}
+.tracking-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.tracking-status.on  { background: #d4edda; color: #2d6a4f; }
+.tracking-status.off { background: #f8d7da; color: #842029; }
+.tracking-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tracking-date-input {
+  padding: 4px 8px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  width: 130px;
+}
+.tracking-toggle-btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tracking-toggle-btn.pause { background: #f8d7da; color: #842029; }
+.tracking-toggle-btn.resume { background: #d4edda; color: #2d6a4f; }
+.quick-btn.paused { opacity: 0.45; }
+.quick-btn.paused::after { content: '⏸'; position: absolute; top: 4px; right: 6px; font-size: 11px; }
+.quick-btn { position: relative; }
 .settings-export-btn {
   width: 100%;
   padding: 10px;
@@ -1328,6 +1384,13 @@ body {
             <button type="button" class="color-opt" data-color="black" style="background:#333" onclick="saveDefaultPooColor('black')"></button>
           </div>
         </div>
+      </div>
+
+      <!-- Tracking -->
+      <div class="setting-group">
+        <div class="setting-group-title" id="settTrackingTitle">&#x23F8;&#xFE0F; Tracking</div>
+        <div style="font-size:11px;color:var(--text-light);margin-bottom:8px" id="settTrackingHint">Pause a category to stop recording and exclude those days from averages.</div>
+        <div id="trackingRows"></div>
       </div>
 
       <!-- Data -->
@@ -2170,6 +2233,14 @@ const i18n = {
     bottleExpired: 'Bottle expired! Discard formula',
     feedExpired: 'Feed expired! Discard remaining milk',
     timerStarted: 'Timer started',
+    // Tracking
+    trackingGroup: 'Tracking',
+    trackingHint: 'Pause a category to stop recording and exclude those days from averages.',
+    trackingOn: 'ON',
+    trackingOff: 'OFF',
+    trackingPauseBtn: 'Pause from',
+    trackingResumeBtn: 'Resume from',
+    trackingEffectiveDate: 'Effective date',
     // Growth / Measure
     growth: 'Growth',
     logMeasure: 'Log Measurement',
@@ -2394,6 +2465,14 @@ const i18n = {
     bottleExpired: 'ミルク期限切れ！破棄してください',
     feedExpired: '授乳期限切れ！残りは破棄してください',
     timerStarted: 'タイマー開始',
+    // Tracking
+    trackingGroup: 'トラッキング',
+    trackingHint: 'カテゴリーを一時停止すると記録できなくなり、その日は平均から除外されます。',
+    trackingOn: 'ON',
+    trackingOff: 'OFF',
+    trackingPauseBtn: '一時停止',
+    trackingResumeBtn: '再開',
+    trackingEffectiveDate: '有効日',
     // Growth / Measure
     growth: '成長',
     logMeasure: '測定記録',
@@ -2477,6 +2556,9 @@ function applyLang() {
   document.getElementById('settRemindersTitle').innerHTML = '&#x1F514; ' + t('remindersGroup');
   document.getElementById('settDefaultsTitle').innerHTML = '&#x1F527; ' + t('defaultsGroup');
   document.getElementById('settDataTitle').innerHTML = '&#x1F4BE; ' + t('dataGroup');
+  document.getElementById('settTrackingTitle').innerHTML = '&#x23F8;&#xFE0F; ' + t('trackingGroup');
+  document.getElementById('settTrackingHint').textContent = t('trackingHint');
+  renderTrackingSettings();
   document.getElementById('labelBabyName').textContent = t('babyName');
   document.getElementById('labelBirthday').textContent = t('birthday');
   document.getElementById('babyNameInput').placeholder = t('phBabyName');
@@ -2993,7 +3075,7 @@ function calcDayStatsAccurate(allEntries, dateStr) {
   allEntries.forEach(e => {
     if (e.date !== dateStr) return;
     if (e.type === 'feed') { feedCount++; feedMl += (e.volume || 0); }
-    if (e.type === 'poo') pooCount++;
+    if (e.type === 'poo')  pooCount++;
   });
 
   return { sleepMins, nightSleepMins, daySleepMins, feedMl, feedCount, pooCount };
@@ -3284,35 +3366,33 @@ function switchSummaryTab(tab) {
     let html = '<div class="summary-day-list">';
     html += '<div class="summary-day-row header"><span>' + t('dayCol') + '</span><span>' + t('nightCol') + '<span class="col-hint">' + t('nightColHint') + '</span></span><span>' + t('dayCol2') + '<span class="col-hint">' + t('dayColHint') + '</span></span><span>' + t('feedCol') + '</span><span>' + t('pooCol') + '</span><span></span></div>';
     let totals = { nightMins: 0, dayMins: 0, feedMl: 0, feedCount: 0, pooCount: 0 };
-    let includedDays = 0;
+    let sleepDaysW = 0, feedDaysW = 0, pooDaysW = 0;
     const excluded = getExcludedDates();
     for (let i = 0; i < 7; i++) {
       const d = addDays(weekStart, i);
       const stats = calcDayStatsAccurate(entries, d);
       const isExcl = excluded.includes(d);
-      if (!isExcl) {
-        totals.nightMins += stats.nightSleepMins;
-        totals.dayMins += stats.daySleepMins;
-        totals.feedMl += stats.feedMl;
-        totals.feedCount += stats.feedCount;
-        totals.pooCount += stats.pooCount;
-        includedDays++;
-      }
+      const sleepTrackedW = !isExcl && isDateTracked('sleep', d);
+      const feedTrackedW  = !isExcl && isDateTracked('feed',  d);
+      const pooTrackedW   = !isExcl && isDateTracked('poo',   d);
+      if (sleepTrackedW) { totals.nightMins += stats.nightSleepMins; totals.dayMins += stats.daySleepMins; sleepDaysW++; }
+      if (feedTrackedW)  { totals.feedMl += stats.feedMl; totals.feedCount += stats.feedCount; feedDaysW++; }
+      if (pooTrackedW)   { totals.pooCount += stats.pooCount; pooDaysW++; }
       const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
       const dayName = new Date(d + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'numeric', day: 'numeric' });
       const isToday = d === todayStr();
-      const rowClass = isExcl ? ' excluded' : '';
+      const rowPaused = isExcl ? '' : (!sleepTrackedW && !feedTrackedW && !pooTrackedW ? ' excluded' : '');
+      const rowClass = isExcl ? ' excluded' : rowPaused;
       const rowStyle = isToday && !isExcl ? ' style="font-weight:600;background:var(--bg);border-radius:6px;padding:8px 4px"' : '';
       html += '<div class="summary-day-row' + rowClass + '"' + rowStyle + '>' +
         '<span>' + dayName + '</span>' +
-        '<span>' + formatMins(stats.nightSleepMins) + '</span>' +
-        '<span>' + formatMins(stats.daySleepMins) + '</span>' +
-        '<span>' + (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') + '</span>' +
-        '<span>' + stats.pooCount + '</span>' +
+        '<span>' + (sleepTrackedW ? formatMins(stats.nightSleepMins) : '<span style="opacity:0.4">⏸</span>') + '</span>' +
+        '<span>' + (sleepTrackedW ? formatMins(stats.daySleepMins) : '<span style="opacity:0.4">⏸</span>') + '</span>' +
+        '<span>' + (feedTrackedW ? (stats.feedMl > 0 ? stats.feedMl + ' ml' : '-') : '<span style="opacity:0.4">⏸</span>') + '</span>' +
+        '<span>' + (pooTrackedW ? stats.pooCount : '<span style="opacity:0.4">⏸</span>') + '</span>' +
         '<span><button class="exclude-toggle' + (isExcl ? ' active' : '') + '" onclick="toggleExcludeDate(\'' + d + '\')" title="' + (isExcl ? 'Include' : 'Exclude') + '">' + (isExcl ? '✗' : '✓') + '</button></span>' +
       '</div>';
     }
-    const avgDays = Math.max(includedDays, 1);
     html += '<div class="summary-day-row" style="font-weight:700;border-top:2px solid var(--text)">' +
       '<span>' + t('total') + '</span>' +
       '<span>' + formatMins(totals.nightMins) + '</span>' +
@@ -3323,10 +3403,10 @@ function switchSummaryTab(tab) {
     '</div>';
     html += '<div class="summary-day-row" style="color:var(--text-light)">' +
       '<span>' + t('avgPerDay') + '</span>' +
-      '<span>' + formatMins(Math.round(totals.nightMins / avgDays)) + '</span>' +
-      '<span>' + formatMins(Math.round(totals.dayMins / avgDays)) + '</span>' +
-      '<span>' + (totals.feedMl > 0 ? Math.round(totals.feedMl / avgDays) + ' ml' : '-') + '</span>' +
-      '<span>' + (totals.pooCount / avgDays).toFixed(1) + '</span>' +
+      '<span>' + formatMins(Math.round(totals.nightMins / Math.max(sleepDaysW, 1))) + '</span>' +
+      '<span>' + formatMins(Math.round(totals.dayMins / Math.max(sleepDaysW, 1))) + '</span>' +
+      '<span>' + (totals.feedMl > 0 ? Math.round(totals.feedMl / Math.max(feedDaysW, 1)) + ' ml' : '-') + '</span>' +
+      '<span>' + (totals.pooCount / Math.max(pooDaysW, 1)).toFixed(1) + '</span>' +
       '<span></span>' +
     '</div>';
     html += '</div>';
@@ -3406,11 +3486,14 @@ function renderTrends() {
     const nightPct = totalHrs > 0 ? Math.round((nightHrs / totalHrs) * 100) : 0;
     const avgMlPerFeed = stats.feedCount > 0 ? Math.round(stats.feedMl / stats.feedCount) : 0;
     const isExcluded = excluded.includes(d);
+    const sleepTracked = isDateTracked('sleep', d);
+    const feedTracked  = isDateTracked('feed',  d);
     days.push({
       date: d, label: dayLabel, dayNum,
       nightHrs, dayHrs, totalHrs, nightPct,
       feedMl: stats.feedMl, feedCount: stats.feedCount, avgMlPerFeed,
-      excluded: isExcluded
+      excluded: isExcluded,
+      sleepTracked, feedTracked
     });
   }
 
@@ -3437,7 +3520,7 @@ function renderTrends() {
     const totalPct = maxSleep > 0 ? (d.totalHrs / maxSleep) * 100 : 0;
     const nightRatio = d.totalHrs > 0 ? d.nightHrs / d.totalHrs : 0;
     const valLabel = d.totalHrs > 0 ? d.totalHrs.toFixed(1) : '';
-    const dimStyle = d.excluded ? 'opacity:0.25;' : '';
+    const dimStyle = (d.excluded || !d.sleepTracked) ? 'opacity:0.25;' : '';
     html += '<div class="chart-bar-wrap" style="' + dimStyle + '">' +
       (valLabel ? '<div class="chart-bar-val">' + valLabel + '</div>' : '<div class="chart-bar-val">&nbsp;</div>') +
       '<div class="chart-bar" style="height:' + totalPct + '%;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden">' +
@@ -3446,15 +3529,15 @@ function renderTrends() {
       '</div>' +
     '</div>';
   });
-  // Overlay dots and line for % night (skip excluded days)
+  // Overlay dots and line for % night (skip excluded/untracked days)
   days.forEach((d, i) => {
-    if (d.excluded) return;
+    if (d.excluded || !d.sleepTracked) return;
     const leftPct = ((i + 0.5) / numDays) * 100;
     const bottomPct = d.nightPct;
     html += '<div style="position:absolute;left:' + leftPct.toFixed(1) + '%;bottom:' + bottomPct.toFixed(1) + '%;width:6px;height:6px;background:#d9534f;border-radius:50%;transform:translate(-50%,50%);z-index:2"></div>';
   });
-  // SVG line connecting the dots (skip excluded)
-  const includedDots = days.filter(d => !d.excluded);
+  // SVG line connecting the dots (skip excluded/untracked)
+  const includedDots = days.filter(d => !d.excluded && d.sleepTracked);
   if (includedDots.length > 1) {
     html += '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1">';
     const points = includedDots.map(d => {
@@ -3488,21 +3571,21 @@ function renderTrends() {
   days.forEach(d => {
     const pct = maxFeed > 0 ? (d.feedMl / maxFeed) * 100 : 0;
     const valLabel = d.feedMl > 0 ? d.feedMl : '';
-    const dimStyle = d.excluded ? 'opacity:0.25;' : '';
+    const dimStyle = (d.excluded || !d.feedTracked) ? 'opacity:0.25;' : '';
     html += '<div class="chart-bar-wrap" style="' + dimStyle + '">' +
       (valLabel ? '<div class="chart-bar-val">' + valLabel + '</div>' : '<div class="chart-bar-val">&nbsp;</div>') +
       '<div class="chart-bar feed-bar" style="height:' + pct + '%"></div>' +
     '</div>';
   });
-  // Overlay dots for avg ml/feed (skip excluded)
+  // Overlay dots for avg ml/feed (skip excluded/untracked)
   days.forEach((d, i) => {
-    if (d.avgMlPerFeed <= 0 || d.excluded) return;
+    if (d.avgMlPerFeed <= 0 || d.excluded || !d.feedTracked) return;
     const leftPct = ((i + 0.5) / numDays) * 100;
     const bottomPct = (d.avgMlPerFeed / maxAvgMl) * 100;
     html += '<div style="position:absolute;left:' + leftPct.toFixed(1) + '%;bottom:' + bottomPct.toFixed(1) + '%;width:6px;height:6px;background:#8e44ad;border-radius:50%;transform:translate(-50%,50%);z-index:2"></div>';
   });
-  // SVG line connecting avg ml/feed dots (skip excluded)
-  const avgPoints = days.filter(d => d.avgMlPerFeed > 0 && !d.excluded);
+  // SVG line connecting avg ml/feed dots (skip excluded/untracked)
+  const avgPoints = days.filter(d => d.avgMlPerFeed > 0 && !d.excluded && d.feedTracked);
   if (avgPoints.length > 1) {
     html += '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1">';
     const feedLinePoints = avgPoints.map(d => {
@@ -3614,28 +3697,33 @@ function renderTrends() {
 }
 
 function renderTrendStats(entries, today, numDays) {
-  // Collect entries for the past 7 days (excluding excluded dates)
+  // Collect entries for the past 7 days (excluding excluded dates and untracked days per category)
   const excluded = getExcludedDates();
   const statDays = Math.min(numDays, 7);
-  const pastDates = [];
+  const allPastDates = [];
   for (let i = statDays - 1; i >= 0; i--) {
     const d = addDays(today, -i);
-    if (!excluded.includes(d)) pastDates.push(d);
+    if (!excluded.includes(d)) allPastDates.push(d);
   }
-  const past7Entries = entries.filter(e => pastDates.includes(e.date));
-  const effectiveDays = Math.max(pastDates.length, 1);
-  const statLabel = effectiveDays + (currentLang === 'ja' ? '日間' : ' days');
+  // Per-category tracked date sets
+  const sleepDates = allPastDates.filter(d => isDateTracked('sleep', d));
+  const feedDates  = allPastDates.filter(d => isDateTracked('feed',  d));
+  const pooDates   = allPastDates.filter(d => isDateTracked('poo',   d));
+  const mkLabel = n => Math.max(n, 1) + (currentLang === 'ja' ? '日間' : ' days');
+  const sleepLabel   = mkLabel(sleepDates.length);
+  const feedLabel    = mkLabel(feedDates.length);
+  const pooLabel     = mkLabel(pooDates.length);
 
-  // 1. Longest sleep stretch in past 7 days
+  // 1. Longest sleep stretch (sleep-tracked days only)
   let longestSleepMins = 0;
-  past7Entries.filter(e => e.type === 'sleep').forEach(e => {
+  entries.filter(e => e.type === 'sleep' && sleepDates.includes(e.date)).forEach(e => {
     const mins = calcSleepMins(e);
     if (mins > longestSleepMins) longestSleepMins = mins;
   });
 
-  // 2. Average time between feedings (past 7 days)
+  // 2. Average time between feedings (feed-tracked days only)
   const feedTimestamps = [];
-  past7Entries.filter(e => e.type === 'feed').forEach(e => {
+  entries.filter(e => e.type === 'feed' && feedDates.includes(e.date)).forEach(e => {
     const ts = getEntryTimestamp(e);
     if (ts) feedTimestamps.push(ts.getTime());
   });
@@ -3649,11 +3737,11 @@ function renderTrendStats(entries, today, numDays) {
     avgFeedGapMins = Math.round((totalGap / (feedTimestamps.length - 1)) / 60000);
   }
 
-  // 3. Day vs night sleep split (past 7 days)
+  // 3. Day vs night sleep split (sleep-tracked days only)
   // Daytime: 7am-7pm, Nighttime: 7pm-7am
   let dayMins = 0;
   let nightMins = 0;
-  past7Entries.filter(e => e.type === 'sleep' && e.sleepStart && e.sleepEnd).forEach(e => {
+  entries.filter(e => e.type === 'sleep' && sleepDates.includes(e.date) && e.sleepStart && e.sleepEnd).forEach(e => {
     const [sh, sm] = e.sleepStart.split(':').map(Number);
     const startMinOfDay = sh * 60 + sm;
     const totalMins = calcSleepMins(e);
@@ -3673,9 +3761,9 @@ function renderTrendStats(entries, today, numDays) {
   const dayPct = totalSleepMinsDN > 0 ? Math.round((dayMins / totalSleepMinsDN) * 100) : 0;
   const nightPct = totalSleepMinsDN > 0 ? 100 - dayPct : 0;
 
-  // 4. Average poo frequency
-  const pooCount7 = past7Entries.filter(e => e.type === 'poo').length;
-  const avgPooPerDay = (pooCount7 / effectiveDays).toFixed(1);
+  // 4. Average poo frequency (poo-tracked days only)
+  const pooCount7 = entries.filter(e => e.type === 'poo' && pooDates.includes(e.date)).length;
+  const avgPooPerDay = (pooCount7 / Math.max(pooDates.length, 1)).toFixed(1);
 
   let html = '<div class="trend-stats">';
 
@@ -3683,21 +3771,21 @@ function renderTrendStats(entries, today, numDays) {
   html += '<div class="trend-stat-card">' +
     '<div class="ts-label">&#x1F4A4; ' + t('longestSleep') + '</div>' +
     '<div class="ts-value">' + formatMins(longestSleepMins) + '</div>' +
-    '<div class="ts-sub">' + (currentLang === 'ja' ? '過去' : 'past ') + statLabel + '</div>' +
+    '<div class="ts-sub">' + (currentLang === 'ja' ? '過去' : 'past ') + sleepLabel + '</div>' +
   '</div>';
 
   // Avg feed gap
   html += '<div class="trend-stat-card">' +
     '<div class="ts-label">&#x1F37C; ' + t('avgFeedGap') + '</div>' +
     '<div class="ts-value">' + (avgFeedGapMins > 0 ? formatMins(avgFeedGapMins) : '--') + '</div>' +
-    '<div class="ts-sub">' + t('betweenFeedings') + ' (' + (currentLang === 'ja' ? '過去' : 'past ') + statLabel + ')</div>' +
+    '<div class="ts-sub">' + t('betweenFeedings') + ' (' + (currentLang === 'ja' ? '過去' : 'past ') + feedLabel + ')</div>' +
   '</div>';
 
   // Poo frequency
   html += '<div class="trend-stat-card">' +
     '<div class="ts-label">&#x1F4A9; ' + t('pooFrequency') + '</div>' +
     '<div class="ts-value">' + avgPooPerDay + t('perDay') + '</div>' +
-    '<div class="ts-sub">' + (currentLang === 'ja' ? '過去' : 'past ') + statLabel + '</div>' +
+    '<div class="ts-sub">' + (currentLang === 'ja' ? '過去' : 'past ') + pooLabel + '</div>' +
   '</div>';
 
   // Day vs night sleep (takes full width)
@@ -3713,7 +3801,7 @@ function renderTrendStats(entries, today, numDays) {
         '<span>' + t('nightLabel') + ' ' + nightPct + '%</span>' +
       '</div>' +
     '</div>' +
-    '<div class="ts-sub">' + t('dayNightRange') + ' (' + (currentLang === 'ja' ? '過去' : 'past ') + statLabel + ')</div>' +
+    '<div class="ts-sub">' + t('dayNightRange') + ' (' + (currentLang === 'ja' ? '過去' : 'past ') + sleepLabel + ')</div>' +
   '</div>';
 
   // Growth stat (uses all measure entries, not just past N days)
@@ -3733,6 +3821,93 @@ function renderTrendStats(entries, today, numDays) {
 
   html += '</div>';
   return html;
+}
+
+// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// TRACKING SYSTEM
+// ═══════════════════════════════════════════════════════
+// Storage: { sleep: [{from:'YYYY-MM-DD', active:true}, ...], feed:[...], poo:[...], measure:[...] }
+// A date is tracked for a category if the most recent event with from<=date has active:true.
+// Default (no events) = tracked.
+
+const TRACKING_CATS = [
+  { key: 'sleep',   icon: '💤', labelKey: 'sleep'   },
+  { key: 'feed',    icon: '🍼', labelKey: 'feeding'  },
+  { key: 'poo',     icon: '💩', labelKey: 'poo'      },
+  { key: 'measure', icon: '⚖️', labelKey: 'growth'   }
+];
+
+function loadTracking() {
+  try { return JSON.parse(localStorage.getItem('niko_tracking') || '{}'); } catch(e) { return {}; }
+}
+function saveTracking(t) { localStorage.setItem('niko_tracking', JSON.stringify(t)); }
+
+// Is a given date tracked for a category?
+function isDateTracked(cat, dateStr) {
+  const events = (loadTracking()[cat] || []).filter(e => e.from <= dateStr).sort((a,b) => b.from.localeCompare(a.from));
+  return events.length === 0 ? true : events[0].active;
+}
+
+// Is today currently tracked (controls button state)?
+function isCatActiveToday(cat) { return isDateTracked(cat, todayStr()); }
+
+// Get human-readable current state for a category
+function getCatCurrentState(cat) {
+  const events = (loadTracking()[cat] || []).sort((a,b) => b.from.localeCompare(a.from));
+  if (events.length === 0) return { active: true, since: null };
+  return { active: events[0].active, since: events[0].from };
+}
+
+// Toggle tracking for a category from a given date
+function applyTrackingToggle(cat, makeActive, fromDate) {
+  const tracking = loadTracking();
+  if (!tracking[cat]) tracking[cat] = [];
+  // Remove any existing event on the exact same date
+  tracking[cat] = tracking[cat].filter(e => e.from !== fromDate);
+  tracking[cat].push({ from: fromDate, active: makeActive });
+  tracking[cat].sort((a,b) => a.from.localeCompare(b.from));
+  saveTracking(tracking);
+  renderTrackingSettings();
+  updateQuickBtnStates();
+}
+
+function renderTrackingSettings() {
+  const container = document.getElementById('trackingRows');
+  if (!container) return;
+  let html = '';
+  TRACKING_CATS.forEach(cat => {
+    const state = getCatCurrentState(cat.key);
+    const dateInputId = 'trackingDate_' + cat.key;
+    const sinceStr = state.since ? (' since ' + formatDateShort(state.since)) : '';
+    html += '<div class="tracking-row">' +
+      '<div class="tracking-row-label">' + cat.icon + ' ' + t(cat.labelKey) +
+        ' <span class="tracking-status ' + (state.active ? 'on' : 'off') + '">' +
+          (state.active ? t('trackingOn') : t('trackingOff')) + (sinceStr) +
+        '</span>' +
+      '</div>' +
+      '<div class="tracking-controls">' +
+        '<input type="date" class="tracking-date-input" id="' + dateInputId + '" value="' + todayStr() + '">' +
+        (state.active
+          ? '<button class="tracking-toggle-btn pause" onclick="applyTrackingToggle(\'' + cat.key + '\',false,document.getElementById(\'' + dateInputId + '\').value)">' + t('trackingPauseBtn') + '</button>'
+          : '<button class="tracking-toggle-btn resume" onclick="applyTrackingToggle(\'' + cat.key + '\',true,document.getElementById(\'' + dateInputId + '\').value)">' + t('trackingResumeBtn') + '</button>'
+        ) +
+      '</div>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function updateQuickBtnStates() {
+  const today = todayStr();
+  const map = { sleep: 'sleep-btn', feed: 'feed-btn', poo: 'poo-btn', measure: 'measure-btn' };
+  TRACKING_CATS.forEach(cat => {
+    const btn = document.querySelector('.quick-btn.' + map[cat.key]);
+    if (!btn) return;
+    const active = isDateTracked(cat.key, today);
+    btn.classList.toggle('paused', !active);
+    btn.disabled = !active;
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4563,6 +4738,8 @@ checkSleepActive();
 renderTimeSinceLast();
 checkFeedReminder();
 checkPooReminder();
+renderTrackingSettings();
+updateQuickBtnStates();
 updateFormulaTimers();
 startFormulaTimerRefresh();
 </script>
