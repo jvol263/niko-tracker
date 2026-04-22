@@ -825,22 +825,23 @@ body {
 .setting-row input[type="text"] { width: 120px; text-align: right; }
 .setting-row input[type="date"] { width: 150px; }
 /* Tracking section */
-.tracking-row {
+.tracking-cat-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.tracking-cat-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 7px 0;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 .tracking-row-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 90px;
+  flex: 1;
 }
 .tracking-status {
   font-size: 11px;
@@ -850,14 +851,21 @@ body {
 }
 .tracking-status.on  { background: #d4edda; color: #2d6a4f; }
 .tracking-status.off { background: #f8d7da; color: #842029; }
-.tracking-controls {
+.tracking-action-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  margin-top: 4px;
+}
+.tracking-action-label {
+  font-size: 12px;
+  color: var(--text-light);
+  width: 52px;
+  flex-shrink: 0;
 }
 .tracking-date-input {
+  flex: 1;
+  min-width: 0;
   padding: 4px 8px;
   border: 2px solid var(--border);
   border-radius: 8px;
@@ -865,17 +873,17 @@ body {
   font-family: inherit;
   background: var(--bg);
   color: var(--text);
-  width: 130px;
 }
 .tracking-toggle-btn {
-  padding: 5px 12px;
+  padding: 5px 10px;
   border: none;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
-.tracking-toggle-btn.pause { background: #f8d7da; color: #842029; }
+.tracking-toggle-btn.pause  { background: #f8d7da; color: #842029; }
 .tracking-toggle-btn.resume { background: #d4edda; color: #2d6a4f; }
 .quick-btn.paused { opacity: 0.45; }
 .quick-btn.paused::after { content: '⏸'; position: absolute; top: 4px; right: 6px; font-size: 11px; }
@@ -2238,8 +2246,11 @@ const i18n = {
     trackingHint: 'Pause a category to stop recording and exclude those days from averages.',
     trackingOn: 'ON',
     trackingOff: 'OFF',
-    trackingPauseBtn: 'Pause from',
-    trackingResumeBtn: 'Resume from',
+    trackingPauseBtn: 'Pause',
+    trackingResumeBtn: 'Resume',
+    trackingPauseLabel: 'Pause from:',
+    trackingResumeLabel: 'Resume from:',
+    trackingSince: 'since',
     trackingEffectiveDate: 'Effective date',
     // Growth / Measure
     growth: 'Growth',
@@ -2470,8 +2481,11 @@ const i18n = {
     trackingHint: 'カテゴリーを一時停止すると記録できなくなり、その日は平均から除外されます。',
     trackingOn: 'ON',
     trackingOff: 'OFF',
-    trackingPauseBtn: '一時停止',
+    trackingPauseBtn: '停止',
     trackingResumeBtn: '再開',
+    trackingPauseLabel: '停止日:',
+    trackingResumeLabel: '再開日:',
+    trackingSince: '〜',
     trackingEffectiveDate: '有効日',
     // Growth / Measure
     growth: '成長',
@@ -3157,20 +3171,40 @@ function renderTimeSinceLast() {
     }
   });
 
-  // Update DOM
-  document.getElementById('tslFeed').textContent = lastFeedTime ? formatTimeSince(now - lastFeedTime) : '--';
-  document.getElementById('tslFeedSub').textContent = lastFeedAt || '';
+  // Tracking state
+  const today = todayStr();
+  const feedActive  = isCatActiveToday('feed');
+  const sleepActive2 = isCatActiveToday('sleep');
+  const pooActive   = isCatActiveToday('poo');
 
-  if (sleepActive && lastSleepAt === t('sleepingNow')) {
-    document.getElementById('tslSleep').textContent = t('now');
-    document.getElementById('tslSleepSub').textContent = t('sleepingNow');
-  } else {
-    document.getElementById('tslSleep').textContent = lastSleepTime ? formatTimeSince(now - lastSleepTime) : '--';
-    document.getElementById('tslSleepSub').textContent = lastSleepAt || '';
+  // Update DOM — hide cards for paused categories
+  const feedCard  = document.getElementById('tslFeed')  && document.getElementById('tslFeed').closest('.time-since-card');
+  const sleepCard = document.getElementById('tslSleep') && document.getElementById('tslSleep').closest('.time-since-card');
+  const pooCard   = document.getElementById('tslPoo')   && document.getElementById('tslPoo').closest('.time-since-card');
+
+  if (feedCard)  feedCard.style.display  = feedActive  ? '' : 'none';
+  if (sleepCard) sleepCard.style.display = sleepActive2 ? '' : 'none';
+  if (pooCard)   pooCard.style.display   = pooActive   ? '' : 'none';
+
+  if (feedActive) {
+    document.getElementById('tslFeed').textContent = lastFeedTime ? formatTimeSince(now - lastFeedTime) : '--';
+    document.getElementById('tslFeedSub').textContent = lastFeedAt || '';
   }
 
-  document.getElementById('tslPoo').textContent = lastPooTime ? formatTimeSince(now - lastPooTime) : '--';
-  document.getElementById('tslPooSub').textContent = lastPooAt || '';
+  if (sleepActive2) {
+    if (sleepActive && lastSleepAt === t('sleepingNow')) {
+      document.getElementById('tslSleep').textContent = t('now');
+      document.getElementById('tslSleepSub').textContent = t('sleepingNow');
+    } else {
+      document.getElementById('tslSleep').textContent = lastSleepTime ? formatTimeSince(now - lastSleepTime) : '--';
+      document.getElementById('tslSleepSub').textContent = lastSleepAt || '';
+    }
+  }
+
+  if (pooActive) {
+    document.getElementById('tslPoo').textContent = lastPooTime ? formatTimeSince(now - lastPooTime) : '--';
+    document.getElementById('tslPooSub').textContent = lastPooAt || '';
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3875,23 +3909,32 @@ function applyTrackingToggle(cat, makeActive, fromDate) {
 function renderTrackingSettings() {
   const container = document.getElementById('trackingRows');
   if (!container) return;
+  const today = todayStr();
   let html = '';
   TRACKING_CATS.forEach(cat => {
     const state = getCatCurrentState(cat.key);
-    const dateInputId = 'trackingDate_' + cat.key;
-    const sinceStr = state.since ? (' since ' + formatDateShort(state.since)) : '';
-    html += '<div class="tracking-row">' +
-      '<div class="tracking-row-label">' + cat.icon + ' ' + t(cat.labelKey) +
-        ' <span class="tracking-status ' + (state.active ? 'on' : 'off') + '">' +
-          (state.active ? t('trackingOn') : t('trackingOff')) + (sinceStr) +
+    const pauseId  = 'trackingPauseDate_'  + cat.key;
+    const resumeId = 'trackingResumeDate_' + cat.key;
+    const sinceStr = state.since ? (' ' + t('trackingSince') + ' ' + formatDateShort(state.since)) : '';
+    html += '<div class="tracking-cat-block">' +
+      // Header: icon + name + status badge
+      '<div class="tracking-cat-header">' +
+        '<span class="tracking-row-label">' + cat.icon + ' ' + t(cat.labelKey) + '</span>' +
+        '<span class="tracking-status ' + (state.active ? 'on' : 'off') + '">' +
+          (state.active ? t('trackingOn') : t('trackingOff')) + sinceStr +
         '</span>' +
       '</div>' +
-      '<div class="tracking-controls">' +
-        '<input type="date" class="tracking-date-input" id="' + dateInputId + '" value="' + todayStr() + '">' +
-        (state.active
-          ? '<button class="tracking-toggle-btn pause" onclick="applyTrackingToggle(\'' + cat.key + '\',false,document.getElementById(\'' + dateInputId + '\').value)">' + t('trackingPauseBtn') + '</button>'
-          : '<button class="tracking-toggle-btn resume" onclick="applyTrackingToggle(\'' + cat.key + '\',true,document.getElementById(\'' + dateInputId + '\').value)">' + t('trackingResumeBtn') + '</button>'
-        ) +
+      // Pause row
+      '<div class="tracking-action-row">' +
+        '<span class="tracking-action-label">&#x23F8; ' + t('trackingPauseLabel') + '</span>' +
+        '<input type="date" class="tracking-date-input" id="' + pauseId + '" value="' + today + '">' +
+        '<button class="tracking-toggle-btn pause" onclick="applyTrackingToggle(\'' + cat.key + '\',false,document.getElementById(\'' + pauseId + '\').value)">' + t('trackingPauseBtn') + '</button>' +
+      '</div>' +
+      // Resume row
+      '<div class="tracking-action-row">' +
+        '<span class="tracking-action-label">&#x25B6; ' + t('trackingResumeLabel') + '</span>' +
+        '<input type="date" class="tracking-date-input" id="' + resumeId + '" value="' + today + '">' +
+        '<button class="tracking-toggle-btn resume" onclick="applyTrackingToggle(\'' + cat.key + '\',true,document.getElementById(\'' + resumeId + '\').value)">' + t('trackingResumeBtn') + '</button>' +
       '</div>' +
     '</div>';
   });
@@ -4052,7 +4095,7 @@ function loadFeedReminder() {
 function checkFeedReminder() {
   const threshold = localStorage.getItem('niko_feed_reminder') || 'off';
   const banner = document.getElementById('feedReminderBanner');
-  if (threshold === 'off') {
+  if (threshold === 'off' || !isCatActiveToday('feed')) {
     banner.classList.remove('active');
     return;
   }
@@ -4108,7 +4151,7 @@ function loadPooReminder() {
 function checkPooReminder() {
   const threshold = localStorage.getItem('niko_poo_reminder') || 'off';
   const banner = document.getElementById('pooReminderBanner');
-  if (threshold === 'off') {
+  if (threshold === 'off' || !isCatActiveToday('poo')) {
     banner.classList.remove('active');
     return;
   }
