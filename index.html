@@ -3928,37 +3928,59 @@ function renderTrackingSettings() {
   const container = document.getElementById('trackingRows');
   if (!container) return;
   const today = todayStr();
+
+  // Snapshot any dates the user has already typed — survive re-renders without clobbering them
+  const savedPause = {}, savedResume = {};
+  TRACKING_CATS.forEach(cat => {
+    const pi = document.getElementById('trackingPauseDate_'  + cat.key);
+    const ri = document.getElementById('trackingResumeDate_' + cat.key);
+    savedPause[cat.key]  = pi ? pi.value : null;
+    savedResume[cat.key] = ri ? ri.value : null;
+  });
+
   let html = '';
   TRACKING_CATS.forEach(cat => {
-    const state = getCatCurrentState(cat.key);
+    const state  = getCatCurrentState(cat.key);
+    const events = (loadTracking()[cat.key] || []).sort((a,b) => b.from.localeCompare(a.from));
+    // Smart defaults: last event of that action type so picker opens at a relevant date
+    const lastPauseDate  = (events.find(e => !e.active) || {}).from || today;
+    const lastResumeDate = (events.find(e =>  e.active) || {}).from || today;
     const pauseId  = 'trackingPauseDate_'  + cat.key;
     const resumeId = 'trackingResumeDate_' + cat.key;
     const sinceStr = state.since ? (' ' + t('trackingSince') + ' ' + formatDateShort(state.since)) : '';
     html += '<div class="tracking-cat-block">' +
-      // Header: icon + name + status badge
       '<div class="tracking-cat-header">' +
         '<span class="tracking-row-label">' + cat.icon + ' ' + t(cat.labelKey) + '</span>' +
         '<span class="tracking-status ' + (state.active ? 'on' : 'off') + '">' +
           (state.active ? t('trackingOn') : t('trackingOff')) + sinceStr +
         '</span>' +
       '</div>' +
-      // Pause row — primary when active, secondary (dimmed) when already paused
       '<div class="tracking-action-row' + (state.active ? '' : ' secondary') + '">' +
         '<span class="tracking-action-label">&#x23F8; ' + t('trackingPauseLabel') + '</span>' +
-        '<input type="date" class="tracking-date-input" id="' + pauseId + '" value="' + today + '">' +
+        '<input type="date" class="tracking-date-input" id="' + pauseId + '" value="' + lastPauseDate + '">' +
         '<button class="tracking-toggle-btn pause" onclick="applyTrackingToggle(\'' + cat.key + '\',false,document.getElementById(\'' + pauseId + '\').value)">' + t('trackingPauseBtn') + '</button>' +
       '</div>' +
-      // Resume row — primary when paused, secondary (dimmed) when already active
       '<div class="tracking-action-row' + (state.active ? ' secondary' : '') + '">' +
         '<span class="tracking-action-label">&#x25B6; ' + t('trackingResumeLabel') + '</span>' +
-        '<input type="date" class="tracking-date-input" id="' + resumeId + '" value="' + today + '">' +
+        '<input type="date" class="tracking-date-input" id="' + resumeId + '" value="' + lastResumeDate + '">' +
         '<button class="tracking-toggle-btn resume" onclick="applyTrackingToggle(\'' + cat.key + '\',true,document.getElementById(\'' + resumeId + '\').value)">' + t('trackingResumeBtn') + '</button>' +
       '</div>' +
-      // Hint: pause is indefinite
       '<div class="tracking-hint-text">' + t(state.active ? 'trackingHintActive' : 'trackingHintPaused') + '</div>' +
     '</div>';
   });
   container.innerHTML = html;
+
+  // Restore any in-progress user edits (survives re-renders from sync etc.)
+  TRACKING_CATS.forEach(cat => {
+    if (savedPause[cat.key]) {
+      const pi = document.getElementById('trackingPauseDate_'  + cat.key);
+      if (pi) pi.value = savedPause[cat.key];
+    }
+    if (savedResume[cat.key]) {
+      const ri = document.getElementById('trackingResumeDate_' + cat.key);
+      if (ri) ri.value = savedResume[cat.key];
+    }
+  });
 }
 
 function updateQuickBtnStates() {
